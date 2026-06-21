@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brawl Stars - Web Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Arial Black', Impact, sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Animación del fondo colorido de Brawl Stars */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .menu-container {
+            background: rgba(0, 0, 0, 0.6);
+            border: 6px solid #f39c12;
+            border-radius: 25px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(243, 156, 18, 0.3);
+            max-width: 500px;
+            width: 90%;
+            transform: skewX(-4deg); /* Efecto inclinado estilo cómic de Brawl Stars */
+        }
+
+        .logo-text {
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            color: #f1c40f;
+            text-shadow: 
+                -3px -3px 0 #000,  
+                 3px -3px 0 #000,
+                -3px  3px 0 #000,
+                 3px  3px 0 #000,
+                 5px  8px 0px #d35400; /* Sombra 3D gruesa */
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        .game-mode-card {
+            background: linear-gradient(135deg, #2980b9, #2c3e50);
+            border: 3px solid #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .game-mode-title {
+            color: #34e7e4;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .game-mode-name {
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* Botón Jugar estilo Brawl Stars */
+        .play-button {
+            display: inline-block;
+            text-decoration: none;
+            background: linear-gradient(to bottom, #ff9f43, #ee5253);
+            color: white;
+            font-size: 2.2rem;
+            padding: 15px 60px;
+            border-radius: 50px;
+            border: 4px solid #fff;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #c0392b, 0 15px 20px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Efecto al presionar el botón */
+        .play-button:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #c0392b, 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Animación para que el botón llame la atención */
+        @keyframes pulse {
+            0% { transform: scale(1) skewX(0deg); }
+            50% { transform: scale(1.05) skewX(-2deg); }
+            100% { transform: scale(1) skewX(0deg); }
+        }
+
+        .footer-text {
+            margin-top: 25px;
+            font-family: Arial, sans-serif;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-container">
+        <h1 class="logo-text">BRAWL</h1>
+        <div class="subtitle">STARS WEB</div>
+
+        <div class="game-mode-card">
+            <div class="game-mode-title">¡EVENTO ESPECIAL!</div>
+            <div class="game-mode-name">Solo Showdown ☠️</div>
+        </div>
+
+        <!-- Enlace que redirige a tu juego brawl.html -->
+        <a href="brawl.html" class="play-button">¡PLAY!</a>
+
+        <div class="footer-text">Desarrollado para GitHub Pages</div>
+    </div>
+
+</body>
+</html>
