@@ -38,18 +38,23 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // ==========================================
-        // 1. CONFIGURACIÓN BASE DEL MOTOR
-        // ==========================================
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 30, 150);
+      // Reemplazar sección 1. CONFIGURACIÓN BASE DEL MOTOR (Añadir a renderer)
+renderer.toneMapping = THREE.ACESFilmicToneMapping; // Realismo de colores
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(renderer.domElement);
+// Reemplazar sección 2. ILUMINACIÓN AVANZADA
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6); // Luz de cielo y rebote terrestre
+hemiLight.position.set(0, 200, 0);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(100, 150, 50);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 4096; // Sombras HD
+dirLight.shadow.mapSize.height = 4096;
+dirLight.shadow.bias = -0.0005; // Eliminar artefactos de sombra (Acne)
+scene.add(dirLight);
 
         // ==========================================
         // 2. ILUMINACIÓN AVANZADA
