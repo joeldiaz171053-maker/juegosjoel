@@ -3,33 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brawl Royale - Mapa Gigante</title>
+    <title>Brawl Royale - Advanced Engine</title>
     <style>
-        body { margin: 0; background-color: #111; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; }
-        #ui { 
-            position: absolute; top: 10px; left: 10px; z-index: 5; 
-            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 10px; border: 2px solid #f39c12;
-            font-size: 18px; text-transform: uppercase; text-shadow: 2px 2px 0px #000;
+        body { margin: 0; background-color: #000; color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; }
+        
+        /* UI HUD Avanzado */
+        #hud { 
+            position: absolute; top: 15px; left: 15px; z-index: 5; display: flex; gap: 20px;
         }
-        canvas { display: block; background-color: #2da94f; cursor: crosshair; }
+        .stat-box {
+            background: linear-gradient(135deg, rgba(44,62,80,0.9), rgba(0,0,0,0.9));
+            padding: 10px 20px; border-radius: 8px; border: 2px solid #3498db;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 16px; text-transform: uppercase;
+        }
+        .stat-value { color: #f1c40f; font-size: 22px; text-shadow: 2px 2px 0 #000; }
+        
+        /* Minimapa UI */
+        #minimap-container {
+            position: absolute; top: 15px; right: 15px; z-index: 5;
+            width: 200px; height: 200px; border-radius: 50%; border: 4px solid #7f8c8d;
+            background: rgba(39, 174, 96, 0.4); overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        #minimap { width: 100%; height: 100%; }
+
+        canvas#gameCanvas { display: block; background-color: #2da94f; cursor: crosshair; }
+        
         #gameOverScreen {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); flex-direction: column; justify-content: center; align-items: center; z-index: 10;
+            backdrop-filter: blur(5px);
         }
-        #victoryText { font-size: 4rem; color: #f1c40f; text-shadow: 0 5px 0 #d35400; margin-bottom: 30px; transform: skewX(-5deg); }
+        #victoryText { font-size: 5rem; color: #f1c40f; text-shadow: 0 8px 0 #d35400; margin-bottom: 30px; transform: skewX(-5deg); }
         .btn-menu {
             text-decoration: none; background: linear-gradient(to bottom, #3498db, #2980b9); color: white;
-            font-size: 1.8rem; padding: 15px 40px; border-radius: 50px; border: 4px solid #fff; box-shadow: 0 6px 0 #1f4068;
+            font-size: 1.8rem; padding: 15px 40px; border-radius: 50px; border: 4px solid #fff; box-shadow: 0 6px 0 #1f4068; transition: 0.1s;
         }
         .btn-menu:active { transform: translateY(4px); box-shadow: 0 2px 0 #1f4068; }
     </style>
 </head>
 <body>
 
-    <div id="ui">
-        Vivos: <span id="vivos">10</span> | Cubos: <span id="cubos">0</span>
-        <br><span style="font-size:14px; color:#bdc3c7;">Click: Ataque Normal | Tecla F: ULTI</span>
+    <div id="hud">
+        <div class="stat-box">Vivos<br><span class="stat-value" id="vivos">10</span></div>
+        <div class="stat-box">Fuerza<br><span class="stat-value" id="cubos">0</span></div>
+        <div class="stat-box">Modo de Combate<br><span style="font-size:12px; color:#bdc3c7;">WASD: Mover | Click: Disparo | F: Super</span></div>
     </div>
+
+    <div id="minimap-container"><canvas id="minimap"></canvas></div>
 
     <div id="gameOverScreen">
         <h1 id="victoryText">¡FIN!</h1>
@@ -41,27 +62,36 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mCtx = minimap.getContext('2d');
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+minimap.width = 200; minimap.height = 200;
 
-const mapWidth = 3000;
-const mapHeight = 3000;
+// Configuración del motor
+const mapWidth = 3500;
+const mapHeight = 3500;
+let camX = 0, camY = 0;
+let shakeTime = 0, shakeIntensity = 0; // Efecto avanzado de Screen Shake
 
-// Estado del juego
 let juegoTerminado = false;
-const zona = { x: mapWidth/2, y: mapHeight/2, radio: 1800, vel: 0.3 };
+const zona = { x: mapWidth/2, y: mapHeight/2, radio: 2200, vel: 0.25 };
 
-// Clases de personajes
-const CLASES = {
-    ESCOPETA: 0, // Estilo Shelly
-    INFERNO: 1,  // Disparo continuo
-    DOBLE_ESCOPETA: 2 // Estilo Bull (Más daño de cerca)
-};
+// Arrays de entidades
+const balas = [];
+const particulas = []; // Nuevo motor de VFX
+const muros = [];
+const arbustos = [];
+const cajas = [];
+
+// Clases y Personajes
+const CLASES = { ESCOPETA: 0, INFERNO: 1, DOBLE_ESCOPETA: 2 };
 
 const jugador = {
     id: 0, nombre: "Tú", clase: CLASES.ESCOPETA,
-    x: 1500, y: 1500, radio: 22, color: '#3498db',
-    velocidad: 5, vidaMax: 5000, vida: 5000, fuerza: 0, vivo: true,
+    x: 1750, y: 1750, radio: 22, color: '#3498db',
+    velocidad: 5.5, vidaMax: 5000, vida: 5000, fuerza: 0, vivo: true,
     angulo: 0, ultiCarga: 0, ultiMax: 100, enArbusto: false
 };
 
@@ -70,104 +100,114 @@ for(let i=0; i<9; i++) {
     let tipoAzar = Math.floor(Math.random() * 3);
     bots.push({
         id: i+1, nombre: "Bot " + (i+1), clase: tipoAzar,
-        x: Math.random() * (mapWidth - 200) + 100, y: Math.random() * (mapHeight - 200) + 100,
+        x: Math.random() * (mapWidth - 400) + 200, y: Math.random() * (mapHeight - 400) + 200,
         radio: 22, color: tipoAzar === 1 ? '#e67e22' : (tipoAzar === 2 ? '#9b59b6' : '#e74c3c'),
-        velocidad: 3.5, vidaMax: 4500, vida: 4500, fuerza: 0, vivo: true,
+        velocidad: 3.8, vidaMax: 4500, vida: 4500, fuerza: 0, vivo: true,
         ultimoDisparo: 0, angulo: 0, evadiendo: 0, anguloEvasion: 0, enArbusto: false
     });
 }
 
-// Entorno
-const muros = [];
-const arbustos = [];
-const cajas = [];
+// Generación de Entorno Procedural (con área segura)
+for(let i=0; i<50; i++) {
+    let px = Math.random() * mapWidth, py = Math.random() * mapHeight;
+    if (px > 1400 && px < 2100 && py > 1400 && py < 2100) continue; 
+    muros.push({ x: px, y: py, w: 100 + Math.random()*150, h: 50 + Math.random()*100 });
+}
+for(let i=0; i<80; i++) arbustos.push({ x: Math.random() * mapWidth, y: Math.random() * mapHeight, w: 140, h: 140 });
+for(let i=0; i<20; i++) cajas.push({ x: Math.random() * mapWidth, y: Math.random() * mapHeight, tamaño: 45, vida: 3 });
 
-// Generar Mapa (Paredes, Arbustos, Cajas)
-for(let i=0; i<40; i++) muros.push({ x: Math.random() * mapWidth, y: Math.random() * mapHeight, w: 100 + Math.random()*150, h: 50 + Math.random()*100 });
-for(let i=0; i<60; i++) arbustos.push({ x: Math.random() * mapWidth, y: Math.random() * mapHeight, w: 120, h: 120 });
-for(let i=0; i<15; i++) cajas.push({ x: Math.random() * mapWidth, y: Math.random() * mapHeight, tamaño: 40, vida: 3 });
-
-const balas = [];
+// Controles
 const teclas = {};
 const raton = { x: 0, y: 0 };
-let camX = 0, camY = 0;
-
 window.addEventListener('keydown', e => {
     teclas[e.key.toLowerCase()] = true;
-    // Disparar Ulti con 'F'
     if(e.key.toLowerCase() === 'f' && jugador.vivo && !juegoTerminado && jugador.ultiCarga >= jugador.ultiMax) {
-        let mundoX = raton.x + camX;
-        let mundoY = raton.y + camY;
-        dispararUlti(jugador, mundoX, mundoY);
+        dispararUlti(jugador, raton.x + camX, raton.y + camY);
         jugador.ultiCarga = 0;
+        activarShake(15, 20); // Temblor fuerte
     }
 });
 window.addEventListener('keyup', e => teclas[e.key.toLowerCase()] = false);
 window.addEventListener('mousemove', e => { raton.x = e.clientX; raton.y = e.clientY; });
-
 canvas.addEventListener('mousedown', e => {
-    if (e.button === 0 && jugador.vivo && !juegoTerminado) {
-        let mundoX = raton.x + camX; let mundoY = raton.y + camY;
-        dispararNormal(jugador, mundoX, mundoY);
-    }
+    if (e.button === 0 && jugador.vivo && !juegoTerminado) dispararNormal(jugador, raton.x + camX, raton.y + camY);
 });
 
-// Colisiones con Muros (Cilindro vs Rectángulo)
+// SISTEMA AVANZADO DE PARTÍCULAS
+function crearVFX(x, y, color, cantidad, velocidadBase) {
+    for(let i=0; i<cantidad; i++) {
+        particulas.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * velocidadBase,
+            vy: (Math.random() - 0.5) * velocidadBase,
+            radio: Math.random() * 4 + 2,
+            color: color, alpha: 1,
+            decaimiento: Math.random() * 0.03 + 0.02
+        });
+    }
+}
+
+// Activar vibración de cámara
+function activarShake(intensidad, duracion) {
+    shakeIntensity = intensidad; shakeTime = duracion;
+}
+
+// Colisiones matemáticas
 function chocaMuro(nx, ny, radio) {
     for(let m of muros) {
-        let testX = nx; let testY = ny;
-        if (nx < m.x) testX = m.x; else if (nx > m.x + m.w) testX = m.x + m.w;
-        if (ny < m.y) testY = m.y; else if (ny > m.y + m.h) testY = m.y + m.h;
-        let distX = nx - testX; let distY = ny - testY;
-        if (Math.sqrt((distX*distX) + (distY*distY)) <= radio) return true;
+        let tX = nx < m.x ? m.x : (nx > m.x + m.w ? m.x + m.w : nx);
+        let tY = ny < m.y ? m.y : (ny > m.y + m.h ? m.y + m.h : ny);
+        if (Math.hypot(nx - tX, ny - tY) <= radio) return true;
     }
     return false;
 }
 
-// Lógicas de disparo por clases
-function dispararNormal(creador, desX, desY) {
-    const angBase = Math.atan2(desY - creador.y, desX - creador.x);
-    if(creador.clase === CLASES.ESCOPETA) {
-        for(let i=-1; i<=1; i++) crearBala(creador, angBase + (i*0.15), 14, 400, 350, false);
-    } else if(creador.clase === CLASES.INFERNO) {
-        crearBala(creador, angBase + (Math.random()*0.2 - 0.1), 18, 150, 400, false); // Fuego rápido
-    } else if(creador.clase === CLASES.DOBLE_ESCOPETA) {
-        for(let i=-2; i<=2; i++) crearBala(creador, angBase + (i*0.1), 16, 350, 250, false);
+// Armas
+function dispararNormal(c, desX, desY) {
+    const ang = Math.atan2(desY - c.y, desX - c.x);
+    if(c.id === 0) activarShake(3, 5); // Ligero temblor al disparar tú
+    
+    if(c.clase === CLASES.ESCOPETA) {
+        for(let i=-1; i<=1; i++) crearBala(c, ang+(i*0.15), 16, 450, 400, false);
+    } else if(c.clase === CLASES.INFERNO) {
+        crearBala(c, ang+(Math.random()*0.2-0.1), 22, 120, 450, false); 
+    } else if(c.clase === CLASES.DOBLE_ESCOPETA) {
+        for(let i=-2; i<=2; i++) crearBala(c, ang+(i*0.1), 18, 380, 280, false);
     }
 }
 
-function dispararUlti(creador, desX, desY) {
-    const angBase = Math.atan2(desY - creador.y, desX - creador.x);
-    // Súper tipo Shelly (Gigante y rompe muros - simplificado a más daño y distancia)
-    for(let i=-4; i<=4; i++) crearBala(creador, angBase + (i*0.12), 20, 800, 500, true);
+function dispararUlti(c, desX, desY) {
+    const ang = Math.atan2(desY - c.y, desX - c.x);
+    for(let i=-5; i<=5; i++) crearBala(c, ang+(i*0.1), 24, 800, 600, true);
 }
 
-function crearBala(origen, angulo, vel, dmgBase, dist, esUlti) {
-    balas.push({
-        x: origen.x, y: origen.y, vx: Math.cos(angulo)*vel, vy: Math.sin(angulo)*vel,
-        daño: dmgBase + (origen.fuerza * 100), origen: origen,
-        distMax: dist, distRec: 0, esUlti: esUlti
-    });
+function crearBala(o, ang, vel, dmg, dist, ulti) {
+    balas.push({ x: o.x, y: o.y, vx: Math.cos(ang)*vel, vy: Math.sin(ang)*vel, daño: dmg+(o.fuerza*120), origen: o, distMax: dist, distRec: 0, esUlti: ulti });
 }
 
 function update() {
     if (juegoTerminado) return;
 
-    // Actualizar Cámara (Sigue al jugador)
-    camX = jugador.x - canvas.width / 2;
-    camY = jugador.y - canvas.height / 2;
+    // Cálculo del Shake
+    let currentShakeX = 0, currentShakeY = 0;
+    if (shakeTime > 0) {
+        currentShakeX = (Math.random() - 0.5) * shakeIntensity;
+        currentShakeY = (Math.random() - 0.5) * shakeIntensity;
+        shakeTime--;
+    }
+
+    camX = jugador.x - canvas.width / 2 + currentShakeX;
+    camY = jugador.y - canvas.height / 2 + currentShakeY;
     camX = Math.max(0, Math.min(camX, mapWidth - canvas.width));
     camY = Math.max(0, Math.min(camY, mapHeight - canvas.height));
 
-    // Movimiento Jugador
     if (jugador.vivo) {
         let nx = jugador.x, ny = jugador.y;
-        if (teclas['w']) ny -= jugador.velocidad;
-        if (teclas['s']) ny += jugador.velocidad;
-        if (teclas['a']) nx -= jugador.velocidad;
-        if (teclas['d']) nx += jugador.velocidad;
+        if (teclas['w'] || teclas['arrowup']) ny -= jugador.velocidad;
+        if (teclas['s'] || teclas['arrowdown']) ny += jugador.velocidad;
+        if (teclas['a'] || teclas['arrowleft']) nx -= jugador.velocidad;
+        if (teclas['d'] || teclas['arrowright']) nx += jugador.velocidad;
         
-        // Limites de mapa y muros
         nx = Math.max(jugador.radio, Math.min(nx, mapWidth - jugador.radio));
         ny = Math.max(jugador.radio, Math.min(ny, mapHeight - jugador.radio));
         
@@ -175,81 +215,60 @@ function update() {
         if (!chocaMuro(jugador.x, ny, jugador.radio)) jugador.y = ny;
 
         jugador.angulo = Math.atan2((raton.y + camY) - jugador.y, (raton.x + camX) - jugador.x);
-        if (Math.hypot(jugador.x - zona.x, jugador.y - zona.y) > zona.radio) jugador.vida -= 10;
-        
-        // Comprobar si está en arbusto
         jugador.enArbusto = arbustos.some(a => jugador.x > a.x && jugador.x < a.x+a.w && jugador.y > a.y && jugador.y < a.y+a.h);
         
-        if (jugador.vida <= 0) { jugador.vivo = false; verificarFinJuego(); }
+        if (Math.hypot(jugador.x - zona.x, jugador.y - zona.y) > zona.radio) jugador.vida -= 15;
+        if (jugador.vida <= 0) { jugador.vivo = false; crearVFX(jugador.x, jugador.y, jugador.color, 40, 15); verificarFin(); }
     }
 
     if (zona.radio > 0) zona.radio -= zona.vel;
 
-    // IA Avanzada de Bots (Autonomía, Evasión y Clases)
+    // IA y Balas (Lógica optimizada)
     bots.forEach(bot => {
         if (!bot.vivo) return;
-
-        let objetivo = null; let menorDist = Infinity;
+        let obj = null, minD = Infinity;
         let rivales = bots.filter(b => b.vivo && b.id !== bot.id);
         if (jugador.vivo && !jugador.enArbusto) rivales.push(jugador);
 
-        rivales.forEach(r => {
-            let dist = Math.hypot(r.x - bot.x, r.y - bot.y);
-            if (dist < menorDist) { menorDist = dist; objetivo = r; }
-        });
+        rivales.forEach(r => { let d = Math.hypot(r.x - bot.x, r.y - bot.y); if (d < minD) { minD = d; obj = r; } });
 
-        let movX = bot.x, movY = bot.y;
+        let mX = bot.x, mY = bot.y;
         bot.enArbusto = arbustos.some(a => bot.x > a.x && bot.x < a.x+a.w && bot.y > a.y && bot.y < a.y+a.h);
 
         if (bot.evadiendo > 0) {
-            // Rutina de escape de muros
-            movX += Math.cos(bot.anguloEvasion) * bot.velocidad;
-            movY += Math.sin(bot.anguloEvasion) * bot.velocidad;
-            bot.evadiendo--;
+            mX += Math.cos(bot.anguloEvasion) * bot.velocidad; mY += Math.sin(bot.anguloEvasion) * bot.velocidad; bot.evadiendo--;
         } else {
-            let distAlCentro = Math.hypot(bot.x - zona.x, bot.y - zona.y);
-            if (distAlCentro > zona.radio - 100) {
+            let dZ = Math.hypot(bot.x - zona.x, bot.y - zona.y);
+            if (dZ > zona.radio - 100) {
                 bot.angulo = Math.atan2(zona.y - bot.y, zona.x - bot.x);
-                movX += Math.cos(bot.angulo) * bot.velocidad;
-                movY += Math.sin(bot.angulo) * bot.velocidad;
-            } else if (objetivo && menorDist < 450) {
-                bot.angulo = Math.atan2(objetivo.y - bot.y, objetivo.x - bot.x);
-                if (menorDist > 200) {
-                    movX += Math.cos(bot.angulo) * bot.velocidad;
-                    movY += Math.sin(bot.angulo) * bot.velocidad;
-                }
-                
-                let cooldown = bot.clase === CLASES.INFERNO ? 150 : 1500;
-                let ahora = Date.now();
-                if (ahora - bot.ultimoDisparo > cooldown) {
-                    dispararNormal(bot, objetivo.x, objetivo.y);
-                    bot.ultimoDisparo = ahora;
-                }
+                mX += Math.cos(bot.angulo) * bot.velocidad; mY += Math.sin(bot.angulo) * bot.velocidad;
+            } else if (obj && minD < 500) {
+                bot.angulo = Math.atan2(obj.y - bot.y, obj.x - bot.x);
+                if (minD > 250) { mX += Math.cos(bot.angulo) * bot.velocidad; mY += Math.sin(bot.angulo) * bot.velocidad; }
+                if (Date.now() - bot.ultimoDisparo > (bot.clase===CLASES.INFERNO?150:1600)) { dispararNormal(bot, obj.x, obj.y); bot.ultimoDisparo = Date.now(); }
             }
         }
 
-        // Aplicar colisión a bots
-        if (!chocaMuro(movX, bot.y, bot.radio)) bot.x = movX; 
-        else { bot.evadiendo = 40; bot.anguloEvasion = bot.angulo + (Math.random() > 0.5 ? 1.5 : -1.5); }
-        if (!chocaMuro(bot.x, movY, bot.radio)) bot.y = movY;
-        else { bot.evadiendo = 40; bot.anguloEvasion = bot.angulo + (Math.random() > 0.5 ? 1.5 : -1.5); }
+        if (!chocaMuro(mX, bot.y, bot.radio)) bot.x = mX; else { bot.evadiendo = 30; bot.anguloEvasion = bot.angulo + 1.5; }
+        if (!chocaMuro(bot.x, mY, bot.radio)) bot.y = mY; else { bot.evadiendo = 30; bot.anguloEvasion = bot.angulo - 1.5; }
 
-        if (Math.hypot(bot.x - zona.x, bot.y - zona.y) > zona.radio) bot.vida -= 10;
-        if (bot.vida <= 0) { bot.vivo = false; verificarFinJuego(); }
+        if (Math.hypot(bot.x - zona.x, bot.y - zona.y) > zona.radio) bot.vida -= 15;
+        if (bot.vida <= 0) { bot.vivo = false; crearVFX(bot.x, bot.y, bot.color, 30, 10); verificarFin(); }
     });
 
-    // Balas
     for (let i = balas.length - 1; i >= 0; i--) {
         let b = balas[i];
-        b.x += b.vx; b.y += b.vy;
-        b.distRec += Math.hypot(b.vx, b.vy);
+        b.x += b.vx; b.y += b.vy; b.distRec += Math.hypot(b.vx, b.vy);
+        
+        // Estela de partículas para balas
+        if(Math.random() > 0.5) crearVFX(b.x, b.y, b.esUlti ? '#f1c40f' : '#fff', 1, 1);
 
-        if (b.distRec > b.distMax || chocaMuro(b.x, b.y, 5)) { balas.splice(i, 1); continue; }
+        if (b.distRec > b.distMax || (!b.esUlti && chocaMuro(b.x, b.y, 5))) { balas.splice(i, 1); continue; }
 
         cajas.forEach(c => {
             if (c.vida > 0 && b.x > c.x && b.x < c.x+c.tamaño && b.y > c.y && b.y < c.y+c.tamaño) {
-                c.vida--; balas.splice(i, 1);
-                if (c.vida <= 0) { b.origen.fuerza++; b.origen.vidaMax += 500; b.origen.vida = b.origen.vidaMax; }
+                c.vida--; crearVFX(b.x, b.y, '#e67e22', 10, 5); balas.splice(i, 1);
+                if (c.vida <= 0) { b.origen.fuerza++; b.origen.vidaMax += 600; b.origen.vida = b.origen.vidaMax; crearVFX(c.x+c.tamaño/2, c.y+c.tamaño/2, '#2ecc71', 30, 8); }
             }
         });
 
@@ -258,102 +277,130 @@ function update() {
             let t = todos[j];
             if (t.vivo && b.origen.id !== t.id && Math.hypot(t.x - b.x, t.y - b.y) < t.radio) {
                 t.vida -= b.daño; balas.splice(i, 1);
-                if (b.origen.id === 0 && jugador.vivo) jugador.ultiCarga = Math.min(jugador.ultiMax, jugador.ultiCarga + (b.origen.clase === CLASES.INFERNO ? 2 : 12));
-                if (t.vida <= 0) { t.vivo = false; verificarFinJuego(); }
+                crearVFX(b.x, b.y, '#e74c3c', 15, 6); // Sangre/Impacto
+                if(t.id === 0) activarShake(5, 5);
+                if (b.origen.id === 0 && jugador.vivo) jugador.ultiCarga = Math.min(jugador.ultiMax, jugador.ultiCarga + (b.origen.clase===1?3:15));
+                if (t.vida <= 0) { t.vivo = false; crearVFX(t.x, t.y, t.color, 40, 12); verificarFin(); }
                 break;
             }
         }
     }
+
+    // Actualizar motor de partículas
+    for(let i = particulas.length - 1; i >= 0; i--) {
+        let p = particulas[i];
+        p.x += p.vx; p.y += p.vy; p.alpha -= p.decaimiento;
+        if(p.alpha <= 0) particulas.splice(i, 1);
+    }
+
     document.getElementById('vivos').innerText = (jugador.vivo?1:0) + bots.filter(b=>b.vivo).length;
     document.getElementById('cubos').innerText = jugador.fuerza;
 }
 
-// --- RENDERIZADO 2.5D ---
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.save();
-    ctx.translate(-camX, -camY); // Desplazar mundo según la cámara
+    ctx.save(); ctx.translate(-camX, -camY);
 
-    // Rejilla de césped
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    for(let i=0; i<mapWidth; i+=100) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,mapHeight); ctx.stroke(); }
-    for(let i=0; i<mapHeight; i+=100) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(mapWidth,i); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2;
+    for(let i=0; i<mapWidth; i+=150) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,mapHeight); ctx.stroke(); }
+    for(let i=0; i<mapHeight; i+=150) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(mapWidth,i); ctx.stroke(); }
 
-    // Muros 2.5D (Base oscura, Tapa clara)
     muros.forEach(m => {
-        ctx.fillStyle = '#555'; ctx.fillRect(m.x, m.y, m.w, m.h); // Base
-        ctx.fillStyle = '#7f8c8d'; ctx.fillRect(m.x, m.y - 40, m.w, m.h); // Cima
+        ctx.fillStyle = '#555'; ctx.fillRect(m.x, m.y, m.w, m.h); 
+        ctx.fillStyle = '#7f8c8d'; ctx.fillRect(m.x, m.y - 40, m.w, m.h); 
         ctx.fillStyle = '#666'; ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x, m.y-40); ctx.lineTo(m.x+m.w, m.y-40); ctx.lineTo(m.x+m.w, m.y); ctx.fill();
     });
 
     cajas.forEach(c => {
         if(c.vida>0) {
-            ctx.fillStyle = '#e67e22'; ctx.fillRect(c.x, c.y - 10, c.tamaño, c.tamaño);
+            ctx.fillStyle = '#e67e22'; ctx.fillRect(c.x, c.y - 15, c.tamaño, c.tamaño);
             ctx.fillStyle = '#d35400'; ctx.fillRect(c.x, c.y, c.tamaño, c.tamaño);
-            ctx.fillStyle = '#fff'; ctx.font='12px Arial'; ctx.fillText("HP:"+c.vida, c.x, c.y-15);
+            ctx.fillStyle = '#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.fillText(c.vida, c.x+c.tamaño/2, c.y+c.tamaño/2);
         }
     });
 
-    // Arbustos (Fondo)
     arbustos.forEach(a => { ctx.fillStyle = 'rgba(39, 174, 96, 0.7)'; ctx.fillRect(a.x, a.y, a.w, a.h); });
 
     let entidades = [...bots]; if(jugador.vivo) entidades.push(jugador);
-    // Ordenar por Y para pintar los que están "abajo" frente a los que están "arriba" (Efecto 2.5D)
     entidades.sort((a,b) => a.y - b.y).forEach(ent => {
-        if(!ent.vivo) return;
-        // Si el enemigo está en el arbusto y tú no, no lo dibujes
-        if(ent.id !== 0 && ent.enArbusto && !jugador.enArbusto) return;
+        if(!ent.vivo || (ent.id !== 0 && ent.enArbusto && !jugador.enArbusto)) return;
         
         ctx.save(); ctx.translate(ent.x, ent.y);
-        
-        // Sombra
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 15, ent.radio, ent.radio/2, 0, 0, Math.PI*2); ctx.fill();
-
+        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 20, ent.radio, ent.radio/2, 0, 0, Math.PI*2); ctx.fill();
         ctx.rotate(ent.angulo);
-        // Cuerpo
-        ctx.fillStyle = ent.color; ctx.beginPath(); ctx.arc(0, 0, ent.radio, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-        // Arma
-        ctx.fillStyle = '#333'; ctx.fillRect(0, -6, ent.radio+15, 12);
         
+        // Detalles de modelo 2D mejorados
+        ctx.fillStyle = ent.color; ctx.beginPath(); ctx.arc(0, 0, ent.radio, 0, Math.PI*2); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#222'; ctx.stroke();
+        ctx.fillStyle = '#ecf0f1'; ctx.beginPath(); ctx.arc(ent.radio-8, -6, 5, 0, Math.PI*2); ctx.arc(ent.radio-8, 6, 5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#333'; ctx.fillRect(10, -8, ent.radio+15, 16); ctx.strokeRect(10, -8, ent.radio+15, 16);
         ctx.restore();
 
-        // UI por encima del personaje
-        ctx.fillStyle = 'white'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
-        ctx.fillText((ent.fuerza>0?"["+ent.fuerza+"] ":"")+ent.nombre, ent.x, ent.y - 45);
-        // Vida
-        ctx.fillStyle = '#111'; ctx.fillRect(ent.x-20, ent.y-38, 40, 6);
-        ctx.fillStyle = ent.id === 0 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(ent.x-20, ent.y-38, (ent.vida/ent.vidaMax)*40, 6);
+        ctx.fillStyle = 'white'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+        ctx.fillText((ent.fuerza>0?"["+ent.fuerza+"] ":"")+ent.nombre, ent.x, ent.y - 50);
+        ctx.fillStyle = '#111'; ctx.fillRect(ent.x-25, ent.y-42, 50, 8);
+        ctx.fillStyle = ent.id === 0 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(ent.x-25, ent.y-42, (ent.vida/ent.vidaMax)*50, 8);
         
-        // BARRITA DE ULTI ARRIBA (Solo para ti)
         if(ent.id === 0) {
-            ctx.fillStyle = '#111'; ctx.fillRect(ent.x-20, ent.y-30, 40, 4);
+            ctx.fillStyle = '#111'; ctx.fillRect(ent.x-25, ent.y-32, 50, 5);
             ctx.fillStyle = ent.ultiCarga >= ent.ultiMax ? '#f1c40f' : '#f39c12';
-            ctx.fillRect(ent.x-20, ent.y-30, (ent.ultiCarga/ent.ultiMax)*40, 4);
-            
-            // Guía láser
-            ctx.strokeStyle = ent.ultiCarga >= ent.ultiMax ? 'rgba(241,196,15,0.4)' : 'rgba(255,255,255,0.2)';
-            ctx.lineWidth = ent.ultiCarga >= ent.ultiMax ? 8 : 2;
-            ctx.beginPath(); ctx.moveTo(ent.x, ent.y); ctx.lineTo(ent.x+Math.cos(ent.angulo)*200, ent.y+Math.sin(ent.angulo)*200); ctx.stroke();
+            ctx.fillRect(ent.x-25, ent.y-32, (ent.ultiCarga/ent.ultiMax)*50, 5);
+            ctx.strokeStyle = ent.ultiCarga >= ent.ultiMax ? 'rgba(241,196,15,0.4)' : 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = ent.ultiCarga >= ent.ultiMax ? 10 : 2;
+            ctx.beginPath(); ctx.moveTo(ent.x, ent.y); ctx.lineTo(ent.x+Math.cos(ent.angulo)*300, ent.y+Math.sin(ent.angulo)*300); ctx.stroke();
         }
     });
 
+    particulas.forEach(p => {
+        ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.radio, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
     balas.forEach(b => {
         ctx.fillStyle = b.esUlti ? '#f1c40f' : '#fff';
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.esUlti?12:5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = b.esUlti ? 15 : 0; ctx.shadowColor = b.esUlti ? '#f39c12' : 'transparent';
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.esUlti?14:6, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
     });
 
-    // Arbustos (Tope para ocultar personajes)
     arbustos.forEach(a => { ctx.fillStyle = 'rgba(46, 204, 113, 0.4)'; ctx.fillRect(a.x+5, a.y-10, a.w-10, a.h); });
 
-    // Tormenta
     ctx.beginPath(); ctx.rect(0,0,mapWidth,mapHeight); ctx.arc(zona.x, zona.y, Math.max(0,zona.radio), 0, Math.PI*2, true);
-    ctx.fillStyle = 'rgba(155, 89, 182, 0.5)'; ctx.fill();
+    ctx.fillStyle = 'rgba(142, 68, 173, 0.6)'; ctx.fill();
 
     ctx.restore();
+    drawMinimap(); // Dibujar el Radar UI
 }
 
-function verificarFinJuego() {
+// SISTEMA DE RADAR / MINIMAPA
+function drawMinimap() {
+    mCtx.clearRect(0, 0, minimap.width, minimap.height);
+    const scale = minimap.width / mapWidth;
+
+    // Fondo y Tormenta en Minimapa
+    mCtx.fillStyle = 'rgba(142, 68, 173, 0.5)'; mCtx.fillRect(0, 0, minimap.width, minimap.height);
+    mCtx.beginPath(); mCtx.arc(zona.x * scale, zona.y * scale, zona.radio * scale, 0, Math.PI*2);
+    mCtx.fillStyle = '#2da94f'; mCtx.fill();
+
+    // Muros
+    mCtx.fillStyle = 'rgba(0,0,0,0.5)';
+    muros.forEach(m => mCtx.fillRect(m.x * scale, m.y * scale, m.w * scale, m.h * scale));
+
+    // Entidades
+    bots.forEach(b => {
+        if(b.vivo && (!b.enArbusto || jugador.enArbusto)) {
+            mCtx.fillStyle = '#e74c3c'; mCtx.beginPath(); mCtx.arc(b.x * scale, b.y * scale, 3, 0, Math.PI*2); mCtx.fill();
+        }
+    });
+    if(jugador.vivo) {
+        mCtx.fillStyle = '#3498db'; mCtx.beginPath(); mCtx.arc(jugador.x * scale, jugador.y * scale, 4, 0, Math.PI*2); mCtx.fill();
+        // Cono de visión en radar
+        mCtx.beginPath(); mCtx.moveTo(jugador.x * scale, jugador.y * scale);
+        mCtx.arc(jugador.x * scale, jugador.y * scale, 20, jugador.angulo - 0.4, jugador.angulo + 0.4); mCtx.fillStyle = 'rgba(255,255,255,0.4)'; mCtx.fill();
+    }
+}
+
+function verificarFin() {
     let vivos = bots.filter(b=>b.vivo).length;
     if(!jugador.vivo || vivos === 0) {
         juegoTerminado = true;
