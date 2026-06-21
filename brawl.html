@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Brawl Royale</title>
+    <title>Mini Brawl Royale - Batalla 10 Jugadores</title>
     <style>
         body {
             margin: 0;
             background-color: #111;
             color: white;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Arial Black', Gadget, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,51 +19,134 @@
         }
         #ui {
             margin-bottom: 10px;
-            font-size: 20px;
-            font-weight: bold;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #000;
+        }
+        #canvasContainer {
+            position: relative;
+            border: 6px solid #f39c12;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6);
         }
         canvas {
-            background-color: #27ae60; /* Césped */
-            border: 5px solid #2c3e50;
+            background-color: #27ae60; /* Césped del mapa */
             cursor: crosshair;
+            display: block;
+        }
+        /* Pantalla de Fin de Juego Estilo Brawl */
+        #gameOverScreen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #victoryText {
+            font-size: 3.5rem;
+            color: #f1c40f;
+            text-shadow: 0 5px 0 #d35400, 0 0 20px rgba(241,196,15,0.5);
+            margin-bottom: 30px;
+            transform: skewX(-5deg);
+        }
+        .btn-menu {
+            display: inline-block;
+            text-decoration: none;
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: white;
+            font-size: 1.8rem;
+            padding: 15px 40px;
+            border-radius: 50px;
+            border: 4px solid #fff;
+            box-shadow: 0 6px 0 #1f4068;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .btn-menu:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #1f4068;
+        }
+        #ultiBarContainer {
+            width: 120px; height: 12px; background: #34495e;
+            border: 2px solid #fff; border-radius: 6px; margin-top: 5px; display: inline-block;
+        }
+        #ultiBar {
+            width: 0%; height: 100%; background: #f1c40f; transition: width 0.1s;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui">Brawlers Vivos: <span id="vivos">5</span> | Cubos de Fuerza: <span id="cubos">0</span></div>
-    <canvas id="gameCanvas" width="1000" height="700"></canvas>
+    <div id="ui">
+        Vivos: <span id="vivos">10</span> | 
+        Cubos: <span id="cubos">0</span> | 
+        ULTI: <div id="ultiBarContainer"><div id="ultiBar"></div></div>
+    </div>
+
+    <div id="canvasContainer">
+        <canvas id="gameCanvas" width="1200" height="850"></canvas>
+        
+        <div id="gameOverScreen">
+            <h1 id="victoryText">¡FIN DE LA PARTIDA!</h1>
+            <a href="index.html" class="btn-menu">SALIR AL MENÚ</a>
+        </div>
+    </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const gameOverScreen = document.getElementById('gameOverScreen');
 
 // Estado del Juego
 let juegoTerminado = false;
-let mensajeFinal = "";
 
-// La Tormenta (Zona)
+// 3. MAPA MÁS GRANDE Y 10 JUGADORES
 const zona = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    radio: 550,
-    velocidadEncojer: 0.15
+    radio: 650, 
+    velocidadEncojer: 0.2
 };
 
-// Jugador Principal
+// Jugador Principal (Shelly)
 const jugador = {
-    x: 150,
-    y: 150,
-    radio: 20,
-    color: '#3498db', // Azul Brawl
-    velocidad: 4,
-    vidaMax: 4000,
-    vida: 4000,
-    fuerza: 0,
-    vivo: true
+    id: 0,
+    nombre: "Tú (Shelly)",
+    x: 200, y: 200, radio: 22,
+    color: '#3498db', armaColor: '#2c3e50',
+    velocidad: 4.5, vidaMax: 4000, vida: 4000, fuerza: 0, vivo: true,
+    angulo: 0, ultiCarga: 0, ultiMax: 100 // Carga de la ulti
 };
 
-// Teclado y Ratón
+// Generar 9 Bots distribuidos por el mapa grande
+const bots = [];
+const nombresBots = ["Colt Bot", "Bull Bot", "El Primo", "Spike Bot", "Crow Bot", "Leon Bot", "Brock Bot", "Bo Bot", "Barley Bot"];
+for(let i = 0; i < 9; i++) {
+    bots.push({
+        id: i + 1,
+        nombre: nombresBots[i],
+        x: 150 + Math.random() * (canvas.width - 300),
+        y: 150 + Math.random() * (canvas.height - 300),
+        radio: 22,
+        color: '#e74c3c', armaColor: '#7f8c8d',
+        velocidad: 2.8, vidaMax: 4200, vida: 4200, fuerza: 0, vivo: true,
+        ultimoDisparo: 0, angulo: 0, objetivo: null
+    });
+}
+
+// Cajas
+const cajas = [
+    { x: 350, y: 250, tamaño: 35, vida: 3 }, { x: 850, y: 250, tamaño: 35, vida: 3 },
+    { x: 600, y: 425, tamaño: 35, vida: 3 }, { x: 350, y: 600, tamaño: 35, vida: 3 },
+    { x: 850, y: 600, tamaño: 35, vida: 3 }
+];
+
+const balas = [];
 const teclas = {};
 const raton = { x: 0, y: 0 };
 
@@ -75,239 +158,295 @@ canvas.addEventListener('mousemove', e => {
     raton.y = e.clientY - rect.top;
 });
 
-// Disparar
+// CLIC IZQUIERDO Y DERECHO PARA ATAQUE NORMAL Y ULTI
 canvas.addEventListener('mousedown', e => {
-    if (e.button === 0 && jugador.vivo && !juegoTerminado) {
-        disparar(jugador, raton.x, raton.y);
+    if (!jugador.vivo || juegoTerminado) return;
+    
+    if (e.button === 0) { // Clic Izquierdo
+        if (jugador.ultiCarga >= jugador.ultiMax) {
+            // 4. ACTIVA LA ULTI DE SHELLY (Ráfaga masiva expansiva)
+            dispararUltiShelly(jugador, raton.x, raton.y);
+            jugador.ultiCarga = 0;
+            document.getElementById('ultiBar').style.width = '0%';
+        } else {
+            // Disparo Normal
+            dispararNormal(jugador, raton.x, raton.y);
+        }
     }
 });
 
-// Listas de entidades
-const balas = [];
-const bots = [
-    { id: 1, x: 800, y: 150, radio: 20, color: '#e74c3c', velocidad: 2.5, vidaMax: 4000, vida: 4000, fuerza: 0, vivo: true, ultimoDisparo: 0 },
-    { id: 2, x: 150, y: 550, radio: 20, color: '#e74c3c', velocidad: 2.5, vidaMax: 4500, vida: 4500, fuerza: 0, vivo: true, ultimoDisparo: 0 },
-    { id: 3, x: 800, y: 550, radio: 20, color: '#e74c3c', velocidad: 2.5, vidaMax: 3500, vida: 3500, fuerza: 0, vivo: true, ultimoDisparo: 0 },
-    { id: 4, x: 500, y: 350, radio: 20, color: '#e74c3c', velocidad: 2.5, vidaMax: 5000, vida: 5000, fuerza: 0, vivo: true, ultimoDisparo: 0 }
-];
-const cajas = [
-    { x: 300, y: 250, tamaño: 30, vida: 3 },
-    { x: 700, y: 250, tamaño: 30, vida: 3 },
-    { x: 500, y: 500, tamaño: 30, vida: 3 }
-];
-
-function disparar(creador, destinoX, destinoY) {
-    const angulo = Math.atan2(destinoY - creador.y, destinoX - creador.x);
-    balas.push({
-        x: creador.x,
-        y: creador.y,
-        vx: Math.cos(angulo) * 10,
-        vy: Math.sin(angulo) * 10,
-        daño: 800 + (creador.fuerza * 200),
-        origen: creador,
-        distanciaMax: 300,
-        distanciaRecorrida: 0
-    });
+function dispararNormal(creador, desX, desY) {
+    const anguloBase = Math.atan2(desY - creador.y, desX - creador.x);
+    // Ataque en abanico (3 balas consecutivas juntas)
+    for(let i = -1; i <= 1; i++) {
+        let angulo = anguloBase + (i * 0.15);
+        balas.push({
+            x: creador.x, y: creador.y,
+            vx: Math.cos(angulo) * 11, vy: Math.sin(angulo) * 11,
+            daño: 450 + (creador.fuerza * 100), origen: creador,
+            distanciaMax: 280, distanciaRecorrida: 0, esUlti: false
+        });
+    }
 }
 
-// Lógica de actualización
+function dispararUltiShelly(creador, desX, desY) {
+    const anguloBase = Math.atan2(desY - creador.y, desX - creador.x);
+    // Perdigones masivos destructivos (9 balas esparcidas)
+    for(let i = -4; i <= 4; i++) {
+        let angulo = anguloBase + (i * 0.12);
+        balas.push({
+            x: creador.x, y: creador.y,
+            vx: Math.cos(angulo) * 14, vy: Math.sin(angulo) * 14,
+            daño: 600 + (creador.fuerza * 150), origen: creador,
+            distanciaMax: 350, distanciaRecorrida: 0, esUlti: true
+        });
+    }
+}
+
 function update() {
     if (juegoTerminado) return;
 
-    // 1. Movimiento del Jugador
+    // Movimiento del Jugador
     if (jugador.vivo) {
         if (teclas['w'] && jugador.y > jugador.radio) jugador.y -= jugador.velocidad;
         if (teclas['s'] && jugador.y < canvas.height - jugador.radio) jugador.y += jugador.velocidad;
         if (teclas['a'] && jugador.x > jugador.radio) jugador.x -= jugador.velocidad;
         if (teclas['d'] && jugador.x < canvas.width - jugador.radio) jugador.x += jugador.velocidad;
+        jugador.angulo = Math.atan2(raton.y - jugador.y, raton.x - jugador.x);
 
-        // Comprobar daño por tormenta
-        const distACentro = Math.hypot(jugador.x - zona.x, jugador.y - zona.y);
-        if (distACentro > zona.radio) jugador.vida -= 5; // Daño constante
+        if (Math.hypot(jugador.x - zona.x, jugador.y - zona.y) > zona.radio) jugador.vida -= 6;
         if (jugador.vida <= 0) { jugador.vivo = false; verificarFinJuego(); }
     }
 
-    // 2. Encoger la Tormenta
-    if (zona.radio > 80) zona.radio -= zona.velocidadEncojer;
+    if (zona.radio > 100) zona.radio -= zona.velocidadEncojer;
 
-    // 3. IA de los Bots
+    // 2. INTELIGENCIA ARTIFICIAL: BOTS SE ATACAN ENTRE SÍ Y AL JUGADOR
     bots.forEach(bot => {
         if (!bot.vivo) return;
 
-        // Moverse hacia el centro si la tormenta los alcanza, o hacia el jugador si está cerca
-        const distAlJugador = Math.hypot(jugador.x - bot.x, jugador.y - bot.y);
-        const distACentroBot = Math.hypot(bot.x - zona.x, bot.y - zona.y);
+        // Buscar objetivo más cercano (pueden ser otros bots o el jugador principal)
+        let rivales = [...bots.filter(b => b.vivo && b.id !== bot.id)];
+        if (jugador.vivo) rivales.push(jugador);
 
-        if (distACentroBot > zona.radio - 40) {
-            // Huir de la tormenta hacia el centro
-            const anguloCentro = Math.atan2(zona.y - bot.y, zona.x - bot.x);
-            bot.x += Math.cos(anguloCentro) * bot.velocidad;
-            bot.y += Math.sin(anguloCentro) * bot.velocidad;
-        } else if (distAlJugador < 250 && jugador.vivo) {
-            // Perseguir e intentar disparar al jugador
-            const anguloJ = Math.atan2(jugador.y - bot.y, jugador.x - bot.x);
-            bot.x += Math.cos(anguloJ) * bot.velocidad * 0.7;
-            bot.y += Math.sin(anguloJ) * bot.velocidad * 0.7;
+        let objetivoCercano = null;
+        let menorDistancia = 999999;
 
-            // Disparar cada cierto tiempo (Cooldown)
+        rivales.forEach(rival => {
+            let dist = Math.hypot(rival.x - bot.x, rival.y - bot.y);
+            if (dist < menorDistancia) {
+                menorDistancia = dist;
+                objetivoCercano = rival;
+            }
+        });
+
+        const distAlCentro = Math.hypot(bot.x - zona.x, bot.y - zona.y);
+
+        if (distAlCentro > zona.radio - 50) {
+            // Escapar de la Tormenta
+            let ang = Math.atan2(zona.y - bot.y, zona.x - bot.x);
+            bot.x += Math.cos(ang) * bot.velocidad;
+            bot.y += Math.sin(ang) * bot.velocidad;
+            bot.angulo = ang;
+        } else if (objetivoCercano && menorDistancia < 300) {
+            // Atacar e interceptar al objetivo más cercano
+            let ang = Math.atan2(objetivoCercano.y - bot.y, objetivoCercano.x - bot.x);
+            bot.angulo = ang;
+            
+            // Mantener una distancia óptima de combate
+            if (menorDistancia > 120) {
+                bot.x += Math.cos(ang) * bot.velocidad * 0.8;
+                bot.y += Math.sin(ang) * bot.velocidad * 0.8;
+            }
+
+            // Temporizador de ataque
             let ahora = Date.now();
-            if (ahora - bot.ultimoDisparo > 1200) {
-                disparar(bot, jugador.x, jugador.y);
+            if (ahora - bot.ultimoDisparo > 1400) {
+                dispararNormal(bot, objetivoCercano.x, objetivoCercano.y);
                 bot.ultimoDisparo = ahora;
             }
         }
 
-        // Daño de tormenta al bot
-        if (distACentroBot > zona.radio) bot.vida -= 5;
+        if (distAlCentro > zona.radio) bot.vida -= 6;
         if (bot.vida <= 0) { bot.vivo = false; verificarFinJuego(); }
     });
 
-    // 4. Lógica de Balas
+    // Control de Balas y Daño
     for (let i = balas.length - 1; i >= 0; i--) {
         const b = balas[i];
-        b.x += b.vx;
-        b.y += b.vy;
+        b.x += b.vx; b.y += b.vy;
         b.distanciaRecorrida += Math.hypot(b.vx, b.vy);
 
-        // Borrar bala si llega a su rango máximo
         if (b.distanciaRecorrida > b.distanciaMax) {
-            balas.splice(i, 1);
-            continue;
+            balas.splice(i, 1); continue;
         }
 
-        // Colisión Bala -> Cajas
-        cajas.forEach((caja, cIdx) => {
+        // Balas -> Cajas
+        cajas.forEach(caja => {
             if (caja.vida > 0 && b.x > caja.x && b.x < caja.x + caja.tamaño && b.y > caja.y && b.y < caja.y + caja.tamaño) {
                 caja.vida--;
                 balas.splice(i, 1);
-                if (caja.vida <= 0 && b.origen === jugador) {
-                    jugador.fuerza++;
-                    jugador.vidaMax += 400;
-                    jugador.vida = Math.min(jugador.vida + 1000, jugador.vidaMax);
+                if (caja.vida <= 0) {
+                    b.origen.fuerza++;
+                    b.origen.vidaMax += 400;
+                    b.origen.vida = Math.min(b.origen.vida + 1200, b.origen.vidaMax);
                 }
             }
         });
 
-        // Colisión Bala -> Jugador
-        if (jugador.vivo && b.origen !== jugador && Math.hypot(jugador.x - b.x, jugador.y - b.y) < jugador.radio) {
+        // Balas -> Jugador
+        if (jugador.vivo && b.origen.id !== jugador.id && Math.hypot(jugador.x - b.x, jugador.y - b.y) < jugador.radio) {
             jugador.vida -= b.daño;
             balas.splice(i, 1);
             if (jugador.vida <= 0) { jugador.vivo = false; verificarFinJuego(); }
             continue;
         }
 
-        // Colisión Bala -> Bots
-        bots.forEach(bot => {
-            if (bot.vivo && b.origen !== bot && Math.hypot(bot.x - b.x, bot.y - b.y) < bot.radio) {
+        // Balas -> Bots
+        for (let j = 0; j < bots.length; j++) {
+            let bot = bots[j];
+            if (bot.vivo && b.origen.id !== bot.id && Math.hypot(bot.x - b.x, bot.y - b.y) < bot.radio) {
                 bot.vida -= b.daño;
                 balas.splice(i, 1);
+                
+                // Si tú impactas al bot, cargas tu súper / ULTI
+                if (b.origen.id === jugador.id && jugador.vivo) {
+                    jugador.ultiCarga = Math.min(jugador.ultiMax, jugador.ultiCarga + 15);
+                    document.getElementById('ultiBar').style.width = jugador.ultiCarga + '%';
+                    if (jugador.ultiCarga >= jugador.ultiMax) {
+                        document.getElementById('ultiBar').style.backgroundColor = '#e74c3c'; // Brillo lista
+                    }
+                }
+
                 if (bot.vida <= 0) { bot.vivo = false; verificarFinJuego(); }
+                break;
             }
-        });
+        }
     }
 
-    // Actualizar Interfaz (UI)
+    // Actualizar Contador UI
     const vivos = (jugador.vivo ? 1 : 0) + bots.filter(b => b.vivo).length;
     document.getElementById('vivos').innerText = vivos;
     document.getElementById('cubos').innerText = jugador.fuerza;
 }
 
-function verificarFinJuego() {
-    const botsVivos = bots.filter(b => b.vivo).length;
-    if (!jugador.vivo) {
-        juegoTerminado = true;
-        mensajeFinal = "¡DERROTA! Quedaste eliminado.";
-    } else if (botsVivos === 0) {
-        juegoTerminado = true;
-        mensajeFinal = "¡¡SABOR A VICTORIA!! ¡NÚMERO 1!";
-    }
+// FORMA MÁS ESTÉTICA VECTORIAL DE BRAWLERS
+function dibujarBrawler(ctx, obj) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    ctx.rotate(obj.angulo);
+
+    // 1. Anillo de Base / Sombra de Equipo
+    ctx.beginPath();
+    ctx.arc(0, 0, obj.radio, 0, Math.PI * 2);
+    ctx.fillStyle = obj.id === 0 ? 'rgba(52, 152, 219, 0.3)' : 'rgba(231, 76, 60, 0.3)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = obj.id === 0 ? '#3498db' : '#e74c3c';
+    ctx.stroke();
+
+    // 2. Manos del personaje
+    ctx.beginPath();
+    ctx.arc(obj.radio - 5, -12, 6, 0, Math.PI * 2);
+    ctx.arc(obj.radio - 5, 12, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#f39c12';
+    ctx.fill();
+
+    // 3. Cuerpo principal (Cara / Casco)
+    ctx.beginPath();
+    ctx.arc(0, 0, obj.radio - 4, 0, Math.PI * 2);
+    ctx.fillStyle = obj.color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+
+    // 4. El Arma (Gira junto al cuerpo)
+    ctx.fillStyle = obj.armaColor;
+    ctx.fillRect(0, -6, obj.radio + 12, 12);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#111';
+    ctx.strokeRect(0, -6, obj.radio + 12, 12);
+
+    ctx.restore();
+
+    // 5. Barras de Datos (Fijas encima del Personaje)
+    ctx.fillStyle = 'white';
+    ctx.font = '11px Arial Black';
+    ctx.textAlign = 'center';
+    ctx.fillText((obj.fuerza > 0 ? " [" + obj.fuerza + "] " : "") + obj.nombre, obj.x, obj.y - 42);
+
+    ctx.fillStyle = '#111';
+    ctx.fillRect(obj.x - 25, obj.y - 35, 50, 7);
+    ctx.fillStyle = obj.id === 0 ? '#2ecc71' : '#e74c3c';
+    ctx.fillRect(obj.x - 25, obj.y - 35, (obj.vida / obj.vidaMax) * 50, 7);
 }
 
-// Renderizado de gráficos
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Dibujar Cajas de Fuerza
+    // Dibujar Cajas
     cajas.forEach(caja => {
         if (caja.vida > 0) {
-            ctx.fillStyle = '#f39c12';
+            ctx.fillStyle = '#d35400';
             ctx.fillRect(caja.x, caja.y, caja.tamaño, caja.tamaño);
-            ctx.fillStyle = '#fff';
-            ctx.font = '12px Arial';
-            ctx.fillText("HP:" + caja.vida, caja.x, caja.y - 5);
+            ctx.lineWidth = 3; ctx.strokeStyle = '#f39c12';
+            ctx.strokeRect(caja.x, caja.y, caja.tamaño, caja.tamaño);
+            ctx.fillStyle = '#fff'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+            ctx.fillText("HP: " + caja.vida, caja.x + caja.tamaño/2, caja.y - 6);
         }
     });
 
-    // 2. Dibujar Bots
-    bots.forEach(bot => {
-        if (!bot.vivo) return;
-        ctx.beginPath();
-        ctx.arc(bot.x, bot.y, bot.radio, 0, Math.PI * 2);
-        ctx.fillStyle = bot.color;
-        ctx.fill();
-        ctx.closePath();
+    // Dibujar Bots Inteligentes
+    bots.forEach(bot => { if (bot.vivo) dibujarBrawler(ctx, bot); });
 
-        // Barra de vida del bot
-        ctx.fillStyle = 'red';
-        ctx.fillRect(bot.x - 20, bot.y - 35, 40, 6);
-        ctx.fillStyle = 'green';
-        ctx.fillRect(bot.x - 20, bot.y - 35, (bot.vida / bot.vidaMax) * 40, 6);
-    });
-
-    // 3. Dibujar Jugador
+    // Dibujar Jugador
     if (jugador.vivo) {
-        ctx.beginPath();
-        ctx.arc(jugador.x, jugador.y, jugador.radio, 0, Math.PI * 2);
-        ctx.fillStyle = jugador.color;
-        ctx.fill();
-        ctx.closePath();
+        dibujarBrawler(ctx, jugador);
 
-        // Línea de apuntado estilo Brawl Stars
-        const angulo = Math.atan2(raton.y - jugador.y, raton.x - jugador.x);
+        // Guía de apuntado dinámica
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = jugador.ultiCarga >= jugador.ultiMax ? 'rgba(241, 196, 15, 0.5)' : 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = jugador.ultiCarga >= jugador.ultiMax ? 8 : 4;
         ctx.moveTo(jugador.x, jugador.y);
-        ctx.lineTo(jugador.x + Math.cos(angulo) * 120, jugador.y + Math.sin(angulo) * 120);
+        ctx.lineTo(jugador.x + Math.cos(jugador.angulo) * 150, jugador.y + Math.sin(jugador.angulo) * 150);
         ctx.stroke();
-
-        // Barra de vida del jugador
-        ctx.fillStyle = 'red';
-        ctx.fillRect(jugador.x - 20, jugador.y - 35, 40, 6);
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(jugador.x - 20, jugador.y - 35, (jugador.vida / jugador.vidaMax) * 40, 6);
     }
 
-    // 4. Dibujar Balas
+    // Dibujar Proyectiles
     balas.forEach(b => {
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#f1c40f';
+        ctx.arc(b.x, b.y, b.esUlti ? 9 : 5, 0, Math.PI * 2);
+        ctx.fillStyle = b.esUlti ? '#f1c40f' : '#e67e22';
         ctx.fill();
-        ctx.closePath();
     });
 
-    // 5. Dibujar Tormenta (Invertido: Pintamos el exterior del círculo)
+    // Tormenta de gas morado
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, canvas.width, canvas.height);
     ctx.arc(zona.x, zona.y, Math.max(0, zona.radio), 0, Math.PI * 2, true);
-    ctx.fillStyle = 'rgba(155, 89, 182, 0.4)'; // Niebla morada brawler
+    ctx.fillStyle = 'rgba(155, 89, 182, 0.45)';
     ctx.fill();
     ctx.restore();
+}
 
-    // Pantalla de fin de juego
-    if (juegoTerminado) {
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = '40px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(mensajeFinal, canvas.width / 2, canvas.height / 2);
+// 1. CONDICIÓN DE FIN DE PARTIDA Y MOSTRAR MENÚ DE VOLVER
+function verificarFinJuego() {
+    const botsVivos = bots.filter(b => b.vivo).length;
+    
+    if (!jugador.vivo) {
+        juegoTerminado = true;
+        document.getElementById('victoryText').innerText = "¡DERROTA! Quedaste eliminado.";
+        document.getElementById('victoryText').style.color = "#e74c3c";
+        gameOverScreen.style.display = "flex";
+    } else if (botsVivos === 0) {
+        juegoTerminado = true;
+        document.getElementById('victoryText').innerText = "¡¡VICTORIA #1!!";
+        document.getElementById('victoryText').style.color = "#f1c40f";
+        gameOverScreen.style.display = "flex";
     }
 }
 
-// Bucle principal
 function gameLoop() {
     update();
     draw();
