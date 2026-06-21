@@ -3,148 +3,467 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brawl 3D - Three.js Engine</title>
+    <title>Brawl Royale 3D - TecnoTrade Engine</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial Black', sans-serif; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; z-index: 10; text-shadow: 2px 2px 0 #000; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial Black', sans-serif; user-select: none; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; z-index: 10; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; }
+        .bar-container { width: 200px; height: 20px; background: rgba(0,0,0,0.5); border: 2px solid #fff; margin-bottom: 10px; }
+        #hp-bar { width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s; }
+        #zone-warning { color: #e74c3c; display: none; font-size: 24px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
         canvas { display: block; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
-
     <div id="ui">
-        <h2>Motor 3D Base</h2>
-        <p>Usa WASD para moverte.</p>
+        <h2>Brawl Royale 3D</h2>
+        <div class="bar-container"><div id="hp-bar"></div></div>
+        <p>HP: <span id="hp-text">100</span> | Jugadores: <span id="alive-text">6</span></p>
+        <p id="zone-warning">¡ZONA DE DAÑO!</p>
+        <p style="font-size: 12px; color: #ccc;">WASD: Mover | Click Derecho: Disparar</p>
     </div>
+    <div id="crosshair"></div>
 
-    <script>
-        // 1. ESCENA, CÁMARA Y RENDERIZADOR (La trinidad del 3D)
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // ==========================================
+        // 1. CONFIGURACIÓN BASE DEL MOTOR
+        // ==========================================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Color cielo del fondo
-        scene.fog = new THREE.Fog(0x87ceeb, 20, 100); // Niebla para dar profundidad
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 30, 150);
 
-        // Cámara en perspectiva (Campo de visión, Proporción, Cerca, Lejos)
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Activar sombras
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // 2. ILUMINACIÓN
-        const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.4); // Luz base
-        scene.add(luzAmbiente);
+        // ==========================================
+        // 2. ILUMINACIÓN AVANZADA
+        // ==========================================
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
-        const luzSol = new THREE.DirectionalLight(0xffffff, 0.8);
-        luzSol.position.set(20, 40, 20);
-        luzSol.castShadow = true;
-        luzSol.shadow.camera.left = -20; luzSol.shadow.camera.right = 20;
-        luzSol.shadow.camera.top = 20; luzSol.shadow.camera.bottom = -20;
-        scene.add(luzSol);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 200;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
+        scene.add(dirLight);
 
-        // 3. ENTORNO (Suelo)
-        const geometriaSuelo = new THREE.PlaneGeometry(200, 200);
-        const materialSuelo = new THREE.MeshStandardMaterial({ color: 0x2da94f });
+        // ==========================================
+        // 3. GENERACIÓN DE ENTORNO (Decoraciones libres)
+        // ==========================================
+        const mapaSize = 200;
+        const geometriaSuelo = new THREE.PlaneGeometry(mapaSize, mapaSize);
+        const texturaSuelo = createGridTexture(); // Textura procedural para no depender de imágenes externas
+        const materialSuelo = new THREE.MeshStandardMaterial({ map: texturaSuelo, roughness: 0.8 });
         const suelo = new THREE.Mesh(geometriaSuelo, materialSuelo);
-        suelo.rotation.x = -Math.PI / 2; // Acostar el plano para que sea piso
+        suelo.rotation.x = -Math.PI / 2;
         suelo.receiveShadow = true;
         scene.add(suelo);
 
-        // Generar algunos obstáculos 3D aleatorios
-        const geometriaMuro = new THREE.BoxGeometry(2, 4, 2);
-        const materialMuro = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
-        for(let i=0; i<30; i++) {
-            let muro = new THREE.Mesh(geometriaMuro, materialMuro);
-            muro.position.set((Math.random() - 0.5) * 80, 2, (Math.random() - 0.5) * 80);
-            muro.castShadow = true;
-            muro.receiveShadow = true;
-            scene.add(muro);
+        const obstaculos = [];
+        
+        // Generar Árboles Low Poly
+        const geoTronco = new THREE.CylinderGeometry(0.5, 0.8, 3, 8);
+        const matTronco = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        const geoHojas = new THREE.ConeGeometry(3, 6, 8);
+        const matHojas = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+
+        for(let i=0; i<40; i++) {
+            const arbol = new THREE.Group();
+            const tronco = new THREE.Mesh(geoTronco, matTronco);
+            tronco.position.y = 1.5;
+            tronco.castShadow = true;
+            tronco.receiveShadow = true;
+            const hojas = new THREE.Mesh(geoHojas, matHojas);
+            hojas.position.y = 4.5;
+            hojas.castShadow = true;
+            hojas.receiveShadow = true;
+            arbol.add(tronco);
+            arbol.add(hojas);
+            
+            arbol.position.set((Math.random() - 0.5) * (mapaSize - 20), 0, (Math.random() - 0.5) * (mapaSize - 20));
+            scene.add(arbol);
+            
+            // Hitbox aproximado
+            obstaculos.push({ x: arbol.position.x, z: arbol.position.z, radio: 1.5 });
         }
 
-       // 4. JUGADOR (Geometría, Material, Malla)
-const geometriaJugador = new THREE.BoxGeometry(1.5, 3, 1.5);
-const materialJugador = new THREE.MeshStandardMaterial({ color: 0x3498db });
-const jugador = new THREE.Mesh(geometriaJugador, materialJugador);
-jugador.position.y = 1.5; 
-jugador.castShadow = true;
-scene.add(jugador);
+        // ==========================================
+        // 4. ZONA BATTLE ROYALE (Círculo de la muerte)
+        // ==========================================
+        let zoneData = { radio: 100, x: 0, z: 0, dps: 5, shrinkSpeed: 0.05 };
+        const geoZona = new THREE.CylinderGeometry(1, 1, 50, 32, 1, true);
+        const matZona = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        const meshZona = new THREE.Mesh(geoZona, matZona);
+        meshZona.position.y = 25;
+        scene.add(meshZona);
 
-// Arma del jugador
-const geometriaArma = new THREE.BoxGeometry(0.4, 0.4, 2);
-const materialArma = new THREE.MeshStandardMaterial({ color: 0xe74c3c });
-const arma = new THREE.Mesh(geometriaArma, materialArma);
-arma.position.set(1, 0, -1); // Offset lateral y frontal
-arma.castShadow = true;
-jugador.add(arma); // Emparentado al jugador
-        // Bots (Enemigos)
-const bots = [];
-const materialBot = new THREE.MeshStandardMaterial({ color: 0xe67e22 });
+        // ==========================================
+        // 5. SISTEMA DE MODELOS (GLTF) Y ENTIDADES
+        // ==========================================
+        const loader = new GLTFLoader();
+        let modeloBasePlayer = null;
+        const mixerArray = []; // Para animaciones
 
-for(let i=0; i<5; i++) {
-    let bot = new THREE.Mesh(geometriaJugador, materialBot);
-    bot.position.set((Math.random() - 0.5) * 60, 1.5, (Math.random() - 0.5) * 60);
-    bot.castShadow = true;
-    
-    // Arma del bot
-    let armaBot = new THREE.Mesh(geometriaArma, materialArma);
-    armaBot.position.set(1, 0, -1);
-    bot.add(armaBot);
+        const gameState = {
+            jugador: { mesh: null, hp: 100, maxHp: 100, speed: 0.3, vivo: true, cooldown: 0 },
+            bots: [],
+            proyectiles: [],
+            particulas: []
+        };
 
-    scene.add(bot);
-    bots.push(bot);
-}
-        // 5. CONTROLES Y FÍSICAS BÁSICAS
+        // Modelo público de prueba de Three.js
+        const modeloUrl = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
+
+        loader.load(modeloUrl, (gltf) => {
+            modeloBasePlayer = gltf.scene;
+            modeloBasePlayer.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            iniciarJuego();
+        }, undefined, (error) => {
+            console.error('Fallo cargando GLTF, usando fallback.', error);
+            crearFallbackModelo();
+            iniciarJuego();
+        });
+
+        function crearFallbackModelo() {
+            modeloBasePlayer = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+            const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), mat);
+            cuerpo.position.y = 0.75;
+            const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), mat);
+            cabeza.position.y = 2;
+            cuerpo.castShadow = true; cabeza.castShadow = true;
+            modeloBasePlayer.add(cuerpo);
+            modeloBasePlayer.add(cabeza);
+        }
+
+        function iniciarJuego() {
+            // Instanciar Jugador
+            gameState.jugador.mesh = modeloBasePlayer.clone();
+            gameState.jugador.mesh.scale.set(0.5, 0.5, 0.5); // Ajuste escala RobotExpressive
+            scene.add(gameState.jugador.mesh);
+
+            // Instanciar Bots
+            for(let i=0; i<5; i++) {
+                crearBot();
+            }
+            animar();
+        }
+
+        function crearBot() {
+            let mesh = modeloBasePlayer.clone();
+            mesh.scale.set(0.5, 0.5, 0.5);
+            // Pintar bot de rojo para diferenciar
+            mesh.traverse((child) => {
+                if(child.isMesh) child.material = new THREE.MeshStandardMaterial({ color: 0xe74c3c });
+            });
+            mesh.position.set((Math.random() - 0.5) * 80, 0, (Math.random() - 0.5) * 80);
+            scene.add(mesh);
+            
+            gameState.bots.push({
+                mesh: mesh,
+                hp: 50,
+                speed: 0.15 + Math.random() * 0.05,
+                cooldown: 0,
+                estado: 'cazar' // cazar, huir
+            });
+            actualizarUIAlive();
+        }
+
+        // ==========================================
+        // 6. SISTEMA DE COMBATE (Armas y Proyectiles)
+        // ==========================================
+        const geoBala = new THREE.SphereGeometry(0.2, 8, 8);
+        const matBalaPlayer = new THREE.MeshBasicMaterial({ color: 0xf1c40f });
+        const matBalaBot = new THREE.MeshBasicMaterial({ color: 0xe74c3c });
+
+        function disparar(origenMesh, esJugador) {
+            const bala = new THREE.Mesh(geoBala, esJugador ? matBalaPlayer : matBalaBot);
+            
+            // Calcular dirección basada en la rotación actual del mesh
+            const direccion = new THREE.Vector3(0, 0, 1);
+            direccion.applyQuaternion(origenMesh.quaternion);
+
+            // Posición inicial (frente al personaje)
+            bala.position.copy(origenMesh.position);
+            bala.position.y += 1.5; // Altura del arma
+            bala.position.addScaledVector(direccion, 1.5);
+
+            scene.add(bala);
+            gameState.proyectiles.push({
+                mesh: bala,
+                dir: direccion.normalize(),
+                speed: 1.2,
+                vida: 100, // frames
+                esJugador: esJugador,
+                daño: 25
+            });
+        }
+
+        // Efectos de partículas (Impactos)
+        function crearImpacto(pos) {
+            const geoParticulas = new THREE.BufferGeometry();
+            const posArray = new Float32Array(30 * 3);
+            for(let i=0; i<30 * 3; i++) posArray[i] = (Math.random() - 0.5) * 2;
+            geoParticulas.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const matParticulas = new THREE.PointsMaterial({ size: 0.2, color: 0xffa500 });
+            const sistema = new THREE.Points(geoParticulas, matParticulas);
+            sistema.position.copy(pos);
+            scene.add(sistema);
+            gameState.particulas.push({ mesh: sistema, vida: 20 });
+        }
+
+        // ==========================================
+        // 7. CONTROLES E INPUT
+        // ==========================================
         const teclas = {};
         window.addEventListener('keydown', (e) => teclas[e.key.toLowerCase()] = true);
         window.addEventListener('keyup', (e) => teclas[e.key.toLowerCase()] = false);
 
-        const velocidad = 0.2;
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // Bloquear menú nativo
+            if(gameState.jugador.vivo && gameState.jugador.cooldown <= 0) {
+                disparar(gameState.jugador.mesh, true);
+                gameState.jugador.cooldown = 15; // Frames entre disparos
+            }
+        });
 
-        // Ajustar pantalla si se cambia el tamaño de la ventana
+        // ==========================================
+        // 8. FUNCIONES DE ACTUALIZACIÓN (Lógica)
+        // ==========================================
+        function actualizarZona() {
+            zoneData.radio -= zoneData.shrinkSpeed;
+            if(zoneData.radio < 2) zoneData.radio = 2; // Tamaño mínimo
+            
+            meshZona.scale.set(zoneData.radio, 1, zoneData.radio);
+            
+            // Daño al jugador si está fuera
+            if(gameState.jugador.vivo) {
+                const dist = Math.hypot(gameState.jugador.mesh.position.x - zoneData.x, gameState.jugador.mesh.position.z - zoneData.z);
+                if(dist > zoneData.radio) {
+                    recibirDaño(gameState.jugador, zoneData.dps / 60); // DPS dividido por 60FPS
+                    document.getElementById('zone-warning').style.display = 'block';
+                } else {
+                    document.getElementById('zone-warning').style.display = 'none';
+                }
+            }
+        }
+
+        function actualizarJugador() {
+            if(!gameState.jugador.vivo) return;
+            if(gameState.jugador.cooldown > 0) gameState.jugador.cooldown--;
+
+            const dir = new THREE.Vector3(0, 0, 0);
+            if(teclas['w']) dir.z -= 1;
+            if(teclas['s']) dir.z += 1;
+            if(teclas['a']) dir.x -= 1;
+            if(teclas['d']) dir.x += 1;
+
+            if(dir.lengthSq() > 0) {
+                dir.normalize();
+                // Colisiones básicas con límites
+                let nx = gameState.jugador.mesh.position.x + dir.x * gameState.jugador.speed;
+                let nz = gameState.jugador.mesh.position.z + dir.z * gameState.jugador.speed;
+                
+                // Rotación estilo Roblox (Hacia donde se mueve)
+                const anguloDestino = Math.atan2(dir.x, dir.z);
+                
+                // Interpolación suave de rotación (Slerp aproximado)
+                const currentRot = gameState.jugador.mesh.rotation.y;
+                let diff = anguloDestino - currentRot;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                gameState.jugador.mesh.rotation.y += diff * 0.2;
+
+                gameState.jugador.mesh.position.set(nx, gameState.jugador.mesh.position.y, nz);
+            }
+        }
+
+        function actualizarBots() {
+            for(let i = gameState.bots.length - 1; i >= 0; i--) {
+                const bot = gameState.bots[i];
+                if(bot.cooldown > 0) bot.cooldown--;
+
+                if(gameState.jugador.vivo) {
+                    const distJugador = bot.mesh.position.distanceTo(gameState.jugador.mesh.position);
+                    
+                    // Comportamiento básico: Perseguir y disparar
+                    if(distJugador > 15) {
+                        // Mover hacia jugador
+                        const dir = new THREE.Vector3().subVectors(gameState.jugador.mesh.position, bot.mesh.position).normalize();
+                        bot.mesh.position.addScaledVector(dir, bot.speed);
+                        bot.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+                    } else if (distJugador < 25 && bot.cooldown <= 0) {
+                        // Apuntar y disparar
+                        const dir = new THREE.Vector3().subVectors(gameState.jugador.mesh.position, bot.mesh.position).normalize();
+                        bot.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+                        disparar(bot.mesh, false);
+                        bot.cooldown = 60 + Math.random() * 60; // 1-2 segundos entre disparos
+                    }
+                }
+
+                // Daño por zona al bot
+                const distZona = Math.hypot(bot.mesh.position.x - zoneData.x, bot.mesh.position.z - zoneData.z);
+                if(distZona > zoneData.radio) {
+                    bot.hp -= zoneData.dps / 60;
+                    if(bot.hp <= 0) matarBot(i);
+                }
+            }
+        }
+
+        function actualizarProyectiles() {
+            for(let i = gameState.proyectiles.length - 1; i >= 0; i--) {
+                let p = gameState.proyectiles[i];
+                p.mesh.position.addScaledVector(p.dir, p.speed);
+                p.vida--;
+
+                let destruido = false;
+
+                // Colisión con jugador
+                if(!p.esJugador && gameState.jugador.vivo) {
+                    if(p.mesh.position.distanceTo(gameState.jugador.mesh.position) < 2) {
+                        recibirDaño(gameState.jugador, p.daño);
+                        crearImpacto(p.mesh.position);
+                        destruido = true;
+                    }
+                }
+
+                // Colisión con bots
+                if(p.esJugador) {
+                    for(let b = gameState.bots.length - 1; b >= 0; b--) {
+                        if(p.mesh.position.distanceTo(gameState.bots[b].mesh.position) < 2) {
+                            gameState.bots[b].hp -= p.daño;
+                            crearImpacto(p.mesh.position);
+                            destruido = true;
+                            if(gameState.bots[b].hp <= 0) matarBot(b);
+                            break;
+                        }
+                    }
+                }
+
+                if(p.vida <= 0 || destruido) {
+                    scene.remove(p.mesh);
+                    gameState.proyectiles.splice(i, 1);
+                }
+            }
+        }
+
+        function actualizarParticulas() {
+            for(let i = gameState.particulas.length - 1; i >= 0; i--) {
+                let p = gameState.particulas[i];
+                p.vida--;
+                p.mesh.position.y += 0.05;
+                p.mesh.material.opacity = p.vida / 20;
+                if(p.vida <= 0) {
+                    scene.remove(p.mesh);
+                    gameState.particulas.splice(i, 1);
+                }
+            }
+        }
+
+        // ==========================================
+        // 9. GESTIÓN DE ESTADOS Y UI
+        // ==========================================
+        function recibirDaño(entidad, cantidad) {
+            entidad.hp -= cantidad;
+            if(entidad === gameState.jugador) {
+                document.getElementById('hp-text').innerText = Math.ceil(entidad.hp);
+                document.getElementById('hp-bar').style.width = Math.max(0, (entidad.hp / entidad.maxHp) * 100) + '%';
+                if(entidad.hp <= 0) {
+                    entidad.vivo = false;
+                    scene.remove(entidad.mesh);
+                    document.getElementById('hp-text').innerText = "ELIMINADO";
+                }
+            }
+        }
+
+        function matarBot(index) {
+            scene.remove(gameState.bots[index].mesh);
+            gameState.bots.splice(index, 1);
+            actualizarUIAlive();
+        }
+
+        function actualizarUIAlive() {
+            document.getElementById('alive-text').innerText = gameState.bots.length + (gameState.jugador.vivo ? 1 : 0);
+        }
+
+        // Utilidad: Textura procedural para el suelo (cuadrícula)
+        function createGridTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#2ecc71';
+            context.fillRect(0, 0, 512, 512);
+            context.strokeStyle = '#27ae60';
+            context.lineWidth = 4;
+            for(let i=0; i<512; i+=64) {
+                context.beginPath(); context.moveTo(i, 0); context.lineTo(i, 512); context.stroke();
+                context.beginPath(); context.moveTo(0, i); context.lineTo(512, i); context.stroke();
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(20, 20);
+            return tex;
+        }
+
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
 
-       // 6. BUCLE DE JUEGO (Game Loop)
-function animar() {
-    requestAnimationFrame(animar);
+        // ==========================================
+        // 10. BUCLE DE RENDERIZADO PRINCIPAL
+        // ==========================================
+        function animar() {
+            requestAnimationFrame(animar);
 
-    // Movimiento 3D
-    if (teclas['w']) jugador.position.z -= velocidad;
-    if (teclas['s']) jugador.position.z += velocidad;
-    if (teclas['a']) jugador.position.x -= velocidad;
-    if (teclas['d']) jugador.position.x += velocidad;
+            if(gameState.jugador.mesh) {
+                actualizarJugador();
+                actualizarBots();
+                actualizarProyectiles();
+                actualizarParticulas();
+                actualizarZona();
 
-    // Actualización de arma y rotación base del jugador
-    if(teclas['w'] || teclas['s'] || teclas['a'] || teclas['d']) {
-        // Logica futura para apuntar según movimiento
-    }
+                // Cámara Isométrica/Tercera persona bloqueada
+                if(gameState.jugador.vivo) {
+                    camera.position.x = gameState.jugador.mesh.position.x;
+                    camera.position.y = gameState.jugador.mesh.position.y + 20;
+                    camera.position.z = gameState.jugador.mesh.position.z + 20;
+                    camera.lookAt(gameState.jugador.mesh.position);
+                }
+            }
 
-    // Comportamiento de Bots (Persecución)
-    const velocidadBot = 0.04;
-    bots.forEach(bot => {
-        bot.lookAt(jugador.position);
-        let direccion = new THREE.Vector3();
-        direccion.subVectors(jugador.position, bot.position).normalize();
-        
-        // Evitar colapso en el eje Y
-        bot.position.x += direccion.x * velocidadBot;
-        bot.position.z += direccion.z * velocidadBot;
-    });
-
-    // Seguimiento de cámara
-    camera.position.x = jugador.position.x;
-    camera.position.y = jugador.position.y + 15;
-    camera.position.z = jugador.position.z + 15;
-    camera.lookAt(jugador.position);
-
-    renderer.render(scene, camera);
-}
-
-        animar(); // Iniciar el motor
+            renderer.render(scene, camera);
+        }
     </script>
 </body>
 </html>
