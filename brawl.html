@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TecnoTrade Brawl - Advanced Operations</title>
+    <title>TecnoTrade Brawl - Daytime Operations</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050507; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #87ceeb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; touch-action: none; }
         .glass-panel { background: rgba(18, 18, 24, 0.7); backdrop-filter: saturate(200%) blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8); color: #f5f5f7; }
         #ui { position: absolute; top: 15px; left: 15px; z-index: 10; pointer-events: none; padding: 15px; display: none; width: 220px; }
         h2 { margin: 0 0 10px 0; font-weight: 700; font-size: 1.2rem; background: linear-gradient(135deg, #fff, #8892b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -14,10 +14,9 @@
         .stats { font-size: 0.8rem; color: #a1a1a6; margin: 4px 0; display: flex; justify-content: space-between; }
         .stats span { color: #fff; font-weight: 700; }
         
-        /* Nuevo Contador FPS */
-        #fps-counter { position: absolute; top: 15px; right: 15px; font-family: monospace; font-size: 1rem; color: #00ffcc; font-weight: bold; z-index: 100; text-shadow: 0 0 5px #00ffcc; display: none; pointer-events: none; }
+        #fps-counter { position: absolute; top: 15px; right: 15px; font-family: monospace; font-size: 1rem; color: #34c759; font-weight: bold; z-index: 100; text-shadow: 0 0 5px rgba(0,0,0,0.8); display: none; pointer-events: none; }
         
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; box-shadow: 0 0 5px #fff; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .pantalla { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; background: radial-gradient(circle at center, rgba(10,10,12,0.95) 0%, #000 100%); transition: opacity 0.3s; }
         .oculto { opacity: 0; pointer-events: none; display: none !important; }
         .menu-contenedor { padding: 25px; width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; scrollbar-width: none; }
@@ -29,13 +28,12 @@
         .item-tienda.bloqueado { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
         .tag { position: absolute; top: 4px; right: 4px; font-size: 0.6rem; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
         
-        /* Controles Móviles Optimizados */
         #mobile-controls { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 15; pointer-events: none; display: none; }
-        .joy-zone { position: absolute; bottom: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto; }
+        .joy-zone { position: absolute; bottom: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
         #joy-move { left: 30px; } #joy-aim { right: 30px; }
-        .joy-stick { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        .btn-action { position: absolute; pointer-events: auto; background: rgba(41,151,255,0.2); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #fff; border: 1px solid rgba(41,151,255,0.5); font-size: 0.8rem; user-select: none; }
-        #btn-shoot { bottom: 170px; right: 40px; width: 60px; height: 60px; background: rgba(255,59,48,0.2); border-color: rgba(255,59,48,0.5); font-size: 1.2rem; }
+        .joy-stick { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .btn-action { position: absolute; pointer-events: auto; background: rgba(41,151,255,0.3); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #fff; border: 1px solid rgba(41,151,255,0.6); font-size: 0.8rem; user-select: none; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        #btn-shoot { bottom: 170px; right: 40px; width: 60px; height: 60px; background: rgba(255,59,48,0.3); border-color: rgba(255,59,48,0.6); font-size: 1.2rem; }
         #btn-action-map { bottom: 30px; right: 170px; width: 50px; height: 50px; }
         canvas { display: block; outline: none; }
     </style>
@@ -136,52 +134,52 @@
             ]
         };
 
-        // Detección móvil optimizada
         const isMob = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         let selP = 0, selA = 1, isShooting = false, state = 'MENU';
         const gs = { p: { mesh:null, arm:null, hp:100, mxHp:100, spd:0.4, vivo:false, cd:0, ammo:0 }, bots:[], allies:[], projs:[], parts:[], vehs:[], drops:[], chests:[], kills:0 };
 
-        // --- MOTOR 3D ---
+        // --- MOTOR 3D (ILUMINACIÓN DE DÍA) ---
         const scene = new THREE.Scene(); 
-        scene.background = new THREE.Color(0x050507); 
-        scene.fog = new THREE.FogExp2(0x050507, 0.007);
+        scene.background = new THREE.Color(0x87CEEB); // Cielo Azul Claro
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.003); // Niebla reducida y emparejada al cielo
         
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ antialias:true }); 
         renderer.setSize(window.innerWidth, window.innerHeight); 
         renderer.shadowMap.enabled = true; 
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Equilibrio entre calidad y FPS
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
         renderer.toneMapping = THREE.ACESFilmicToneMapping; 
-        renderer.toneMappingExposure = 1.2; // Aclara la imagen final
+        renderer.toneMappingExposure = 1.0; 
         document.body.appendChild(renderer.domElement);
 
-        // Iluminación ajustada para ambiente nocturno jugable
-        scene.add(new THREE.HemisphereLight(0x666688, 0x1d1d1f, 0.4));
-        const dL = new THREE.DirectionalLight(0x88bbff, 0.8); 
-        dL.position.set(50, 150, 50); 
+        // Iluminación diurna brillante
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6)); // Luz de ambiente diurna
+        const dL = new THREE.DirectionalLight(0xffffee, 1.5); // Sol principal
+        dL.position.set(100, 200, 50); // Sol alto
         dL.castShadow = true; 
-        dL.shadow.mapSize.set(1024,1024); // Optimizado para web
-        dL.shadow.camera.near=0.5; dL.shadow.camera.far=300; 
+        dL.shadow.mapSize.set(1024,1024);
+        dL.shadow.camera.near=0.5; dL.shadow.camera.far=400; 
         dL.shadow.camera.left=-150; dL.shadow.camera.right=150; dL.shadow.camera.top=150; dL.shadow.camera.bottom=-150; 
         scene.add(dL);
 
         const mSize = 300;
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(mSize, mSize), new THREE.MeshStandardMaterial({color:0x111114, roughness:0.9})); 
+        // Suelo aclarado para que parezca asfalto de día
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(mSize, mSize), new THREE.MeshStandardMaterial({color:0x555555, roughness:0.9})); 
         floor.rotation.x = -Math.PI/2; 
         floor.receiveShadow = true; 
         scene.add(floor);
 
         const obs = [];
         function genCity() {
-            const gB = new THREE.BoxGeometry(1,1,1), mB = new THREE.MeshStandardMaterial({color:0x1a1a1d, roughness:0.8}), iM = new THREE.InstancedMesh(gB, mB, 250); iM.castShadow = iM.receiveShadow = true;
-            const gR = new THREE.DodecahedronGeometry(1, 0), mR = new THREE.MeshStandardMaterial({color:0x2a2a2c}), iR = new THREE.InstancedMesh(gR, mR, 150); iR.castShadow = iR.receiveShadow = true;
+            // Edificios un poco más claros para el día
+            const gB = new THREE.BoxGeometry(1,1,1), mB = new THREE.MeshStandardMaterial({color:0x3a3a3d, roughness:0.8}), iM = new THREE.InstancedMesh(gB, mB, 250); iM.castShadow = iM.receiveShadow = true;
+            const gR = new THREE.DodecahedronGeometry(1, 0), mR = new THREE.MeshStandardMaterial({color:0x4a4a4c}), iR = new THREE.InstancedMesh(gR, mR, 150); iR.castShadow = iR.receiveShadow = true;
             const dm = new THREE.Object3D();
             for(let i=0; i<250; i++) {
                 let w=6+Math.random()*10, h=10+Math.random()*25, d=6+Math.random()*10, px=(Math.random()-0.5)*(mSize-20), pz=(Math.random()-0.5)*(mSize-20);
                 dm.position.set(px,h/2,pz); dm.scale.set(w,h,d); dm.updateMatrix(); iM.setMatrixAt(i, dm.matrix); obs.push({b: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(px,h/2,pz), new THREE.Vector3(w,h,d))});
-                // Aumentado el poder de las luces de ciudad
-                if(Math.random()>0.8) { const l = new THREE.PointLight(0x00ffff, 2.5, 30); l.position.set(px+w/2+1, 5, pz); scene.add(l); }
+                // (Se eliminaron las PointLights aquí para optimizar y ajustar a temática de Día)
             }
             for(let i=0; i<150; i++) {
                 let s=1+Math.random()*2, px=(Math.random()-0.5)*(mSize-10), pz=(Math.random()-0.5)*(mSize-10);
@@ -196,7 +194,9 @@
         function initGame() {
             clr(gs.projs); clr(gs.parts); clr(gs.drops); clr(gs.allies); clr(gs.vehs); clr(gs.chests);
             for(let i=0; i<15; i++) {
-                let m = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.8,1), new THREE.MeshStandardMaterial({color:0x3e2723, roughness:1})), l = new THREE.PointLight(0xff9f0a, 2, 10);
+                let m = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.8,1), new THREE.MeshStandardMaterial({color:0x8d6e63, roughness:1}));
+                // Las luces de cofres ahora son opcionales/decorativas, las mantenemos bajas
+                let l = new THREE.PointLight(0xff9f0a, 1, 5);
                 m.position.set((Math.random()-0.5)*200, 0.4, (Math.random()-0.5)*200); l.position.copy(m.position); l.position.y+=1; m.castShadow=true; scene.add(m); scene.add(l);
                 gs.chests.push({m:m, l:l, a:true});
             }
@@ -288,7 +288,6 @@
         window.addEventListener('mousemove', e => { 
             if(document.pointerLockElement) { 
                 yaw -= e.movementX * 0.003; 
-                // Eje Y Corregido (+) para movimiento natural de PC
                 ptc += e.movementY * 0.003; 
                 ptc = Math.max(-0.4, Math.min(Math.PI/3, ptc)); 
             }
@@ -357,13 +356,11 @@
 
         function col(b) { for(let o of obs) if(b.intersectsBox(o.b)) return true; return false; }
 
-        // --- SISTEMA DE RENDIMIENTO Y BUCLE PRINCIPAL ---
         let lastTime = performance.now(), frames = 0;
 
         function loop() {
             requestAnimationFrame(loop);
             
-            // Calculador FPS
             frames++;
             const now = performance.now();
             if(now - lastTime >= 1000) {
@@ -398,12 +395,11 @@
                             if(!col(pB)) gs.p.mesh.position.copy(nP);
                         }
                         
-                        // Posicionamiento First Person (Cámara)
                         camera.position.copy(gs.p.mesh.position).add(new THREE.Vector3(0, 1.6, 0));
                         camera.rotation.order = 'YXZ';
                         camera.rotation.y = yaw;
                         camera.rotation.x = ptc;
-                        gs.p.mesh.rotation.y = yaw; // El jugador siempre mira a donde apunta
+                        gs.p.mesh.rotation.y = yaw; 
                     }
                     
                     if(gs.p.hp <= 0) {
@@ -412,34 +408,26 @@
                     }
                 }
 
-                // --- IA BOTS ---
                 gs.bots.forEach((b, i) => {
                     if(!gs.p.vivo) return;
                     const dist = b.m.position.distanceTo(gs.p.mesh.position);
                     
-                    // Sensor de proximidad arreglado
                     if(dist < 50) { 
-                        // El Bot te mira
                         b.m.lookAt(gs.p.mesh.position.x, b.m.position.y, gs.p.mesh.position.z);
-                        
-                        // Si está lejos, te persigue
                         if(dist > 12) {
                             const dir = new THREE.Vector3(0,0,-1).applyQuaternion(b.m.quaternion);
                             const nPb = b.m.position.clone().add(dir.multiplyScalar(b.spd));
                             b.b.setFromCenterAndSize(nPb.clone().add(new THREE.Vector3(0,1,0)), new THREE.Vector3(1,2,1));
                             if(!col(b.b)) b.m.position.copy(nPb);
                         }
-                        
-                        // Disparar
                         if(b.cd <= 0 && dist < 25) {
                             shoot(b.m, b.a, -2, DATOS.armas[b.aI]);
-                            b.cd = DATOS.armas[b.aI].cd * 1.5; // Disparan un poco más lento
+                            b.cd = DATOS.armas[b.aI].cd * 1.5; 
                         }
                     }
                     if(b.cd > 0) b.cd--;
                 });
 
-                // --- FÍSICAS PROYECTILES ---
                 for(let i=gs.projs.length-1; i>=0; i--) {
                     let p = gs.projs[i];
                     p.m.position.add(p.d.clone().multiplyScalar(p.spd));
@@ -448,12 +436,12 @@
                     
                     let hit = false;
                     if(col(p.b)) hit = true;
-                    else if(p.iJ === true) { // Si disparó el jugador
+                    else if(p.iJ === true) {
                         gs.bots.forEach((b, bi) => {
                             b.b.setFromObject(b.m);
                             if(b.b.intersectsBox(p.b)) { dmgB(bi, p.dmg, true); hit = true; }
                         });
-                    } else if(p.iJ === -2 && gs.p.vivo) { // Si disparó un bot
+                    } else if(p.iJ === -2 && gs.p.vivo) { 
                         const pBox = new THREE.Box3().setFromObject(gs.p.mesh);
                         if(pBox.intersectsBox(p.b)) { gs.p.hp -= p.dmg; hit = true; updUI(); mkImp(gs.p.mesh.position, 0xff3b30); }
                     }
@@ -465,17 +453,15 @@
                     }
                 }
 
-                // --- SISTEMA PARTÍCULAS (Limpieza de memoria para no saturar gráficos) ---
                 for(let i=gs.parts.length-1; i>=0; i--) {
                     let pt = gs.parts[i];
                     const pos = pt.m.geometry.attributes.position.array;
-                    for(let j=0; j<10; j++) { pos[j*3] += pt.v[j*3]; pos[j*3+1] += pt.v[j*3+1]; pos[j*3+2] += pt.v[j*3+2]; pt.v[j*3+1] -= 0.05; } // Gravedad
+                    for(let j=0; j<10; j++) { pos[j*3] += pt.v[j*3]; pos[j*3+1] += pt.v[j*3+1]; pos[j*3+2] += pt.v[j*3+2]; pt.v[j*3+1] -= 0.05; } 
                     pt.m.geometry.attributes.position.needsUpdate = true;
                     pt.l--;
                     if(pt.l <= 0) { scene.remove(pt.m); pt.m.geometry.dispose(); pt.m.material.dispose(); gs.parts.splice(i, 1); }
                 }
 
-                // --- RECOGER DROPS ---
                 for(let i=gs.drops.length-1; i>=0; i--) {
                     let d = gs.drops[i];
                     d.m.rotation.y += 0.05;
@@ -491,7 +477,7 @@
         }
 
         rMenu();
-        loop(); // Iniciar renderizador
+        loop(); 
     </script>
 </body>
 </html>
