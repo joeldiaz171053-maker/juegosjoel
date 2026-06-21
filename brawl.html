@@ -3,46 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brawl Royale 3D - TecnoTrade Engine</title>
+    <title>TecnoTrade Brawl 3D</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #0b0c10; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+        .glass-panel { background: rgba(15, 15, 20, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); color: #fff; }
         
-        /* Estética Premium / Glassmorphism */
-        .glass-panel {
-            background: rgba(20, 20, 25, 0.65);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            color: #fff;
-        }
-
-        #ui { position: absolute; top: 15px; left: 15px; z-index: 10; pointer-events: none; padding: 15px; display: none; }
-        h2 { margin: 0 0 10px 0; font-weight: 600; font-size: 1.2rem; letter-spacing: 0.5px; }
-        .bar-container { width: 220px; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
-        #hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .stats { font-size: 0.9rem; color: #ccc; margin: 5px 0; }
-        #zone-warning { color: #ff4757; display: none; font-weight: bold; animation: pulse 1s infinite; margin-top: 10px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        #ui { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; padding: 20px; display: none; width: 250px; }
+        h2 { margin: 0 0 15px 0; font-weight: 700; font-size: 1.4rem; letter-spacing: -0.5px; }
+        .bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
+        #hp-bar { width: 100%; height: 100%; background: #00ffcc; transition: width 0.3s ease; box-shadow: 0 0 10px rgba(0,255,204,0.5); }
+        .stats { font-size: 0.85rem; color: #8892b0; margin: 8px 0; font-weight: 500; display: flex; justify-content: space-between; }
+        .stats span { color: #fff; font-weight: 600; }
+        #zone-warning { color: #ff3366; display: none; font-weight: 800; animation: pulse 1s infinite; margin-top: 15px; text-align: center; }
         
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; }
-
-        /* Menús Interactivos */
-        .pantalla { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; transition: opacity 0.3s; }
+        @keyframes pulse { 0%, 100% { opacity: 1; text-shadow: 0 0 10px #ff3366; } 50% { opacity: 0.3; } }
+        
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #00ffcc; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; box-shadow: 0 0 8px #00ffcc; }
+        
+        .pantalla { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; transition: opacity 0.4s ease; background: radial-gradient(circle at center, rgba(30,30,40,0.9) 0%, #000 100%); }
         .oculto { opacity: 0; pointer-events: none; display: none !important; }
+        .menu-contenedor { padding: 50px; width: 600px; max-height: 80vh; overflow-y: auto; }
+        .menu-contenedor h1 { font-size: 3rem; margin-bottom: 5px; text-align: center; background: linear-gradient(135deg, #fff, #8892b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; }
         
-        .menu-contenedor { padding: 40px; text-align: center; width: 400px; }
-        .menu-contenedor h1 { font-size: 2.5rem; margin-bottom: 20px; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn { background: #fff; color: #000; border: none; padding: 15px 30px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 20px; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:hover { background: #00ffcc; box-shadow: 0 0 20px rgba(0,255,204,0.4); transform: translateY(-2px); }
         
-        .btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px 24px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin: 5px; width: 100%; box-sizing: border-box; }
-        .btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
-        .btn:active { transform: translateY(0); }
-        
-        .grid-seleccion { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
-        .item-seleccion { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; cursor: pointer; transition: 0.2s; }
-        .item-seleccion.activo { border-color: #3498db; background: rgba(52, 152, 219, 0.2); }
-        .precio { font-size: 0.8rem; color: #f1c40f; }
+        .grid-tienda { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
+        .item-tienda { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .item-tienda:hover { border-color: #00ffcc; background: rgba(0,255,204,0.05); }
+        .item-tienda.activo { border-color: #00ffcc; box-shadow: inset 0 0 15px rgba(0,255,204,0.1); }
+        .tag-precio { display: inline-block; background: #ffcc00; color: #000; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: 800; margin-top: 10px; }
 
         canvas { display: block; }
     </style>
@@ -57,78 +47,113 @@
 </head>
 <body>
     <div id="ui" class="glass-panel">
-        <h2>Brawl Royale</h2>
+        <h2>TecnoTrade</h2>
         <div class="bar-container"><div id="hp-bar"></div></div>
-        <p class="stats">HP: <span id="hp-text">100</span> | Vivos: <span id="alive-text">6</span></p>
-        <p class="stats">Monedas: <span id="monedas-text" style="color:#f1c40f">0</span></p>
-        <p id="zone-warning">¡ZONA DE DAÑO!</p>
+        <div class="stats">Salud: <span id="hp-text">100</span></div>
+        <div class="stats">Munición: <span id="ammo-text">∞</span></div>
+        <div class="stats">Vivos: <span id="alive-text">6</span></div>
+        <div class="stats">Monedas: <span id="monedas-text" style="color:#ffcc00">0</span></div>
+        <p id="zone-warning">SALIENDO DEL ÁREA</p>
     </div>
     <div id="crosshair"></div>
 
     <div id="pantalla-inicio" class="pantalla glass-panel" style="border-radius: 0; border: none;">
         <div class="menu-contenedor glass-panel">
             <h1>TecnoTrade Brawl</h1>
-            <p style="color: #f1c40f; font-weight: bold;">Monedas: <span id="menu-monedas">0</span></p>
+            <p style="text-align: center; color: #ffcc00; font-weight: bold; font-size: 1.2rem;">Monedas: <span id="menu-monedas">0</span></p>
             
-            <h3 style="margin-top: 20px;">Personaje</h3>
-            <div class="grid-seleccion" id="grid-personajes"></div>
+            <h3 style="margin-top: 20px;">Operadores</h3>
+            <div class="grid-tienda" id="grid-personajes"></div>
             
-            <h3>Arma</h3>
-            <div class="grid-seleccion" id="grid-armas"></div>
+            <h3>Armamento</h3>
+            <div class="grid-tienda" id="grid-armas"></div>
             
-            <button class="btn" id="btn-jugar" style="background: #3498db; border-color: #2980b9; margin-top: 20px;">INICIAR PARTIDA</button>
+            <button class="btn" id="btn-jugar">DESPLEGAR</button>
         </div>
     </div>
 
     <div id="pantalla-fin" class="pantalla glass-panel oculto" style="border-radius: 0; border: none; background: rgba(20,0,0,0.8);">
         <div class="menu-contenedor glass-panel">
-            <h1 style="color: #e74c3c; -webkit-text-fill-color: initial;">ELIMINADO</h1>
-            <p>Posición: #<span id="posicion-final">0</span></p>
-            <p>Monedas ganadas: +<span id="monedas-ganadas">0</span></p>
-            <button class="btn" id="btn-volver" style="margin-top: 20px;">VOLVER AL MENÚ</button>
+            <h1 style="color: #ff3366; -webkit-text-fill-color: initial;">ELIMINADO</h1>
+            <p style="text-align: center; font-size: 1.2rem;">Posición: #<span id="posicion-final">0</span></p>
+            <p style="text-align: center; font-size: 1.2rem; color: #ffcc00;">Monedas ganadas: +<span id="monedas-ganadas">0</span></p>
+            <button class="btn" id="btn-volver" style="margin-top: 20px;">VOLVER A BASE</button>
         </div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // ==========================================
-        // CONFIGURACIÓN BASE Y ESTADOS
+        // MOTOR DE AUDIO PROCEDURAL
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSonido(tipo) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if(tipo === 'disparo') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (tipo === 'melee') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            } else if (tipo === 'recarga') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        // ==========================================
+        // DATOS MAESTROS Y ESTADOS
         // ==========================================
         let monedasGlobales = parseInt(localStorage.getItem('tecnotrade_coins')) || 0;
-        let estadoJuego = 'MENU'; // MENU, JUGANDO, FIN
+        let estadoJuego = 'MENU';
 
         const DATOS = {
             personajes: [
-                { id: 0, nombre: 'Modelo Base', color: 0xbdc3c7, precio: 0, desbloqueado: true },
-                { id: 1, nombre: 'Stealth', color: 0x2c3e50, precio: 50, desbloqueado: false },
-                { id: 2, nombre: 'Golden', color: 0xf1c40f, precio: 200, desbloqueado: false }
+                { id: 0, nombre: 'Recluta', color: 0xbdc3c7, tipo: 'bipedo', precio: 0, desbloqueado: true },
+                { id: 1, nombre: 'U. Táctica', color: 0x111111, tipo: 'policia', precio: 100, desbloqueado: false },
+                { id: 2, nombre: 'Dron Combate', color: 0xffffff, tipo: 'dron', precio: 300, desbloqueado: false }
             ],
             armas: [
-                { id: 0, nombre: 'Pistola', cd: 20, daño: 20, vel: 2.0, balas: 1, spread: 0, auto: false },
-                { id: 1, nombre: 'Escopeta', cd: 45, daño: 12, vel: 1.8, balas: 5, spread: 0.15, auto: false },
-                { id: 2, nombre: 'Rifle', cd: 6, daño: 8, vel: 2.5, balas: 1, spread: 0.05, auto: true }
+                { id: 0, nombre: 'Karambit', cd: 40, daño: 50, vel: 0, balas: 1, spread: 0, auto: false, maxAmmo: Infinity, melee: true },
+                { id: 1, nombre: 'Pistola', cd: 20, daño: 25, vel: 2.5, balas: 1, spread: 0.02, auto: false, maxAmmo: 30, melee: false },
+                { id: 2, nombre: 'Escopeta', cd: 50, daño: 12, vel: 2.0, balas: 5, spread: 0.2, auto: false, maxAmmo: 15, melee: false },
+                { id: 3, nombre: 'Rifle Asalto', cd: 8, daño: 15, vel: 3.5, balas: 1, spread: 0.08, auto: true, maxAmmo: 90, melee: false }
             ]
         };
 
-        // Cargar desbloqueos
         const unlocks = JSON.parse(localStorage.getItem('tecnotrade_unlocks')) || [0];
         DATOS.personajes.forEach(p => { if(unlocks.includes(p.id)) p.desbloqueado = true; });
 
-        let selPersonaje = 0;
-        let selArma = 0;
-        let disparando = false;
+        let selPersonaje = 0; let selArma = 1; let disparando = false;
+        const drops = [];
 
         const gameState = {
-            jugador: { mesh: null, armaMesh: null, hp: 100, maxHp: 100, speed: 0.35, vivo: false, cooldown: 0 },
-            bots: [], proyectiles: [], particulas: [],
-            stats: { kills: 0 }
+            jugador: { mesh: null, armaMesh: null, hp: 100, maxHp: 100, speed: 0.35, vivo: false, cooldown: 0, municionActual: 0 },
+            bots: [], proyectiles: [], particulas: [], stats: { kills: 0 }
         };
 
+        // ==========================================
+        // CONFIGURACIÓN 3D BASE
+        // ==========================================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 30, 150);
+        scene.background = new THREE.Color(0x0b0c10);
+        scene.fog = new THREE.FogExp2(0x0b0c10, 0.015);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -138,25 +163,22 @@
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-        hemiLight.position.set(0, 200, 0);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
         scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
         dirLight.position.set(100, 150, 50);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far = 250;
         dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100;
         dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
         scene.add(dirLight);
 
-        // MAPA
         const mapaSize = 200;
         const suelo = new THREE.Mesh(
             new THREE.PlaneGeometry(mapaSize, mapaSize),
-            new THREE.MeshStandardMaterial({ map: createGridTexture(), roughness: 0.8 })
+            new THREE.MeshStandardMaterial({ map: createGridTexture(), roughness: 0.9, metalness: 0.1 })
         );
         suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
         scene.add(suelo);
@@ -169,51 +191,95 @@
             zoneData = { radio: 100, x: 0, z: 0, dps: 5, shrinkSpeed: 0.03 };
             meshZona = new THREE.Mesh(
                 new THREE.CylinderGeometry(1, 1, 50, 32, 1, true),
-                new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.2, side: THREE.DoubleSide })
+                new THREE.MeshBasicMaterial({ color: 0xff3366, transparent: true, opacity: 0.15, side: THREE.DoubleSide })
             );
             meshZona.position.y = 25;
             meshZona.scale.set(zoneData.radio, 1, zoneData.radio);
             scene.add(meshZona);
+
+            drops.forEach(d => scene.remove(d)); drops.length = 0;
+            for(let i=0; i<15; i++) spawnAmmoDrop();
         }
 
         // ==========================================
-        // MODELOS Y ARMAS
+        // GENERADORES PROCEDURALES
         // ==========================================
-        let modeloBasePlayer = new THREE.Group();
-        const matCuerpo = new THREE.MeshStandardMaterial({ color: 0xbdc3c7 });
-        const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), matCuerpo); cuerpo.position.y = 0.75;
-        const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matCuerpo); cabeza.position.y = 2;
-        cuerpo.castShadow = true; cabeza.castShadow = true;
-        modeloBasePlayer.add(cuerpo); modeloBasePlayer.add(cabeza);
+        function construirModelo(datosPersonaje) {
+            const grupo = new THREE.Group();
+            const matCuerpo = new THREE.MeshStandardMaterial({ color: datosPersonaje.color, roughness: 0.4, metalness: 0.6 });
+            
+            if(datosPersonaje.tipo === 'dron') {
+                const nucleo = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), matCuerpo);
+                const matAspa = new THREE.MeshStandardMaterial({color: 0x333333});
+                const aspa1 = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.2), matAspa);
+                const aspa2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 2.5), matAspa);
+                aspa1.position.y = 0.5; aspa2.position.y = 0.5;
+                nucleo.castShadow = aspa1.castShadow = aspa2.castShadow = true;
+                grupo.add(nucleo, aspa1, aspa2);
+                grupo.userData = { tipo: 'dron', aspas: [aspa1, aspa2], animOffset: Math.random() * Math.PI };
+            } else {
+                const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), matCuerpo); cuerpo.position.y = 0.75;
+                const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matCuerpo); cabeza.position.y = 2;
+                cuerpo.castShadow = cabeza.castShadow = true;
+                grupo.add(cuerpo, cabeza);
+                
+                if(datosPersonaje.tipo === 'policia') {
+                    const sirena1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.4), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                    const sirena2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.4), new THREE.MeshBasicMaterial({color: 0x0000ff}));
+                    sirena1.position.set(-0.3, 2.45, 0); sirena2.position.set(0.3, 2.45, 0);
+                    grupo.add(sirena1, sirena2);
+                }
+                grupo.userData = { tipo: 'bipedo', animOffset: Math.random() * Math.PI };
+            }
+            return grupo;
+        }
 
-        function crearArmaMesh() {
+        function crearArmaMesh(armaData) {
             const grupoArma = new THREE.Group();
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 1.2), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-            mesh.position.set(0.6, 1.2, -0.5); // Offset relativo al jugador
+            const mat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, armaData.melee ? 0.6 : 1.2), mat);
+            mesh.position.set(0.6, 1.2, -0.5);
             mesh.castShadow = true;
             grupoArma.add(mesh);
             return grupoArma;
         }
 
+        function spawnAmmoDrop() {
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x004433 });
+            const caja = new THREE.Mesh(geo, mat);
+            caja.position.set((Math.random() - 0.5) * 150, 0.5, (Math.random() - 0.5) * 150);
+            scene.add(caja);
+            drops.push(caja);
+        }
+
+        function crearImpacto(pos) {
+            const geo = new THREE.BufferGeometry();
+            const posArray = new Float32Array(15 * 3);
+            for(let i=0; i<45; i++) posArray[i] = (Math.random() - 0.5) * 1.5;
+            geo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const sis = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.15, color: 0x00ffcc }));
+            sis.position.copy(pos);
+            scene.add(sis);
+            gameState.particulas.push({ mesh: sis, vida: 15 });
+        }
+
         // ==========================================
-        // LÓGICA DE JUEGO (SPAWN, DISPARO, DAÑO)
+        // LÓGICA DE JUEGO (COMBATE Y SPAWNS)
         // ==========================================
         function spawnJugador() {
             if(gameState.jugador.mesh) scene.remove(gameState.jugador.mesh);
+            const persoData = DATOS.personajes[selPersonaje];
+            const armaData = DATOS.armas[selArma];
             
-            gameState.jugador.mesh = modeloBasePlayer.clone();
-            gameState.jugador.mesh.position.set(0, 0, 0);
-            
-            // Aplicar color de personaje seleccionado
-            gameState.jugador.mesh.traverse((c) => {
-                if(c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: DATOS.personajes[selPersonaje].color });
-            });
-
-            gameState.jugador.armaMesh = crearArmaMesh();
+            gameState.jugador.mesh = construirModelo(persoData);
+            gameState.jugador.armaMesh = crearArmaMesh(armaData);
             gameState.jugador.mesh.add(gameState.jugador.armaMesh);
             
+            gameState.jugador.mesh.position.set(0, 0, 0);
             gameState.jugador.hp = 100;
             gameState.jugador.vivo = true;
+            gameState.jugador.municionActual = armaData.maxAmmo;
             gameState.stats.kills = 0;
             scene.add(gameState.jugador.mesh);
         }
@@ -222,17 +288,17 @@
             gameState.bots.forEach(b => scene.remove(b.mesh));
             gameState.bots = [];
             for(let i=0; i<cantidad; i++) {
-                let mesh = modeloBasePlayer.clone();
-                mesh.traverse((c) => { if(c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: 0xe74c3c }); });
+                const tipoBot = DATOS.personajes[Math.floor(Math.random() * DATOS.personajes.length)];
+                const armaBotIdx = Math.floor(Math.random() * DATOS.armas.length);
+                const armaData = DATOS.armas[armaBotIdx];
                 
-                let arma = crearArmaMesh();
+                let mesh = construirModelo(tipoBot);
+                mesh.traverse((c) => { if(c.isMesh && c.material.color.getHex() !== 0xff0000 && c.material.color.getHex() !== 0x0000ff) c.material = new THREE.MeshStandardMaterial({ color: 0xff3366 }); });
+                
+                let arma = crearArmaMesh(armaData);
                 mesh.add(arma);
-                
                 mesh.position.set((Math.random() - 0.5) * 140, 0, (Math.random() - 0.5) * 140);
                 scene.add(mesh);
-                
-                // Asignar arma aleatoria al bot
-                const armaBotIdx = Math.floor(Math.random() * DATOS.armas.length);
                 
                 gameState.bots.push({
                     mesh: mesh, armaMesh: arma, hp: 50, speed: 0.15 + Math.random() * 0.1, 
@@ -241,57 +307,66 @@
             }
         }
 
-        const geoBala = new THREE.SphereGeometry(0.2, 8, 8);
-        const matBalaPlayer = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        const matBalaBot = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const geoBala = new THREE.SphereGeometry(0.15, 8, 8);
+        const matBalaPlayer = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+        const matBalaBot = new THREE.MeshBasicMaterial({ color: 0xff3366 });
 
         function ejecutarDisparo(origenMesh, armaMesh, esJugador, origenId, armaStats) {
-            // Animación de retroceso (Recoil)
-            const armaInterna = armaMesh.children[0];
-            armaInterna.position.z += 0.4; 
-
-            for(let i=0; i<armaStats.balas; i++) {
-                const bala = new THREE.Mesh(geoBala, esJugador ? matBalaPlayer : matBalaBot);
-                const direccion = new THREE.Vector3(0, 0, 1).applyQuaternion(origenMesh.quaternion);
-                
-                // Aplicar Spread (Dispersión)
-                direccion.x += (Math.random() - 0.5) * armaStats.spread;
-                direccion.y += (Math.random() - 0.5) * armaStats.spread;
-                direccion.z += (Math.random() - 0.5) * armaStats.spread;
-                direccion.normalize();
-                
-                // Posición inicial
-                bala.position.copy(origenMesh.position);
-                bala.position.add(armaInterna.position.clone().applyQuaternion(origenMesh.quaternion));
-                
-                scene.add(bala);
-                gameState.proyectiles.push({
-                    mesh: bala, dir: direccion, speed: armaStats.vel, vida: 80, 
-                    esJugador: esJugador, daño: armaStats.daño, origenId: origenId
-                });
+            if(esJugador) {
+                if(gameState.jugador.municionActual <= 0 && !armaStats.melee) { playSonido('recarga'); return; }
+                if(!armaStats.melee) gameState.jugador.municionActual--;
             }
+
+            playSonido(armaStats.melee ? 'melee' : 'disparo');
+            
+            const armaInterna = armaMesh.children[0];
+            armaInterna.position.z += armaStats.melee ? -0.8 : 0.4; 
+
+            if(armaStats.melee) {
+                const forward = new THREE.Vector3(0,0,1).applyQuaternion(origenMesh.quaternion);
+                if(esJugador) {
+                    gameState.bots.forEach((b, idx) => {
+                        if(b.mesh.position.distanceTo(origenMesh.position) < 3.0) {
+                            b.hp -= armaStats.daño; crearImpacto(b.mesh.position);
+                            if(b.hp <= 0) { scene.remove(b.mesh); gameState.bots.splice(idx, 1); gameState.stats.kills++; }
+                        }
+                    });
+                } else if (gameState.jugador.vivo && gameState.jugador.mesh.position.distanceTo(origenMesh.position) < 3.0) {
+                    gameState.jugador.hp -= armaStats.daño; crearImpacto(gameState.jugador.mesh.position);
+                }
+            } else {
+                for(let i=0; i<armaStats.balas; i++) {
+                    const bala = new THREE.Mesh(geoBala, esJugador ? matBalaPlayer : matBalaBot);
+                    const direccion = new THREE.Vector3(0, 0, 1).applyQuaternion(origenMesh.quaternion);
+                    direccion.x += (Math.random() - 0.5) * armaStats.spread;
+                    direccion.y += (Math.random() - 0.5) * armaStats.spread;
+                    direccion.z += (Math.random() - 0.5) * armaStats.spread;
+                    bala.position.copy(origenMesh.position);
+                    bala.position.y += 1.2;
+                    scene.add(bala);
+                    gameState.proyectiles.push({ mesh: bala, dir: direccion.normalize(), speed: armaStats.vel, vida: 80, esJugador: esJugador, daño: armaStats.daño, origenId: origenId });
+                }
+            }
+            if(esJugador) actualizarUI();
         }
 
         // ==========================================
-        // MENÚS Y UI INTERACTIVA
+        // UI Y CONTROL DE MENÚS
         // ==========================================
         function renderMenu() {
             document.getElementById('menu-monedas').innerText = monedasGlobales;
             
-            // Personajes
             const gridP = document.getElementById('grid-personajes');
             gridP.innerHTML = '';
             DATOS.personajes.forEach((p, idx) => {
                 const div = document.createElement('div');
-                div.className = `item-seleccion ${selPersonaje === idx ? 'activo' : ''}`;
+                div.className = `item-tienda ${selPersonaje === idx ? 'activo' : ''}`;
                 div.innerHTML = `<strong>${p.nombre}</strong><br>` + 
-                                (p.desbloqueado ? `<span style="color:#2ecc71">Desbloqueado</span>` : `<span class="precio">🪙 ${p.precio}</span>`);
+                                (p.desbloqueado ? `<span style="color:#00ffcc; font-size:0.8rem;">Adquirido</span>` : `<span class="tag-precio">🪙 ${p.precio}</span>`);
                 div.onclick = () => {
                     if(p.desbloqueado) { selPersonaje = idx; renderMenu(); }
                     else if(monedasGlobales >= p.precio) {
-                        monedasGlobales -= p.precio;
-                        p.desbloqueado = true;
-                        selPersonaje = idx;
+                        monedasGlobales -= p.precio; p.desbloqueado = true; selPersonaje = idx;
                         const u = JSON.parse(localStorage.getItem('tecnotrade_unlocks')) || [0];
                         u.push(p.id);
                         localStorage.setItem('tecnotrade_unlocks', JSON.stringify(u));
@@ -302,35 +377,25 @@
                 gridP.appendChild(div);
             });
 
-            // Armas
             const gridA = document.getElementById('grid-armas');
             gridA.innerHTML = '';
             DATOS.armas.forEach((a, idx) => {
                 const div = document.createElement('div');
-                div.className = `item-seleccion ${selArma === idx ? 'activo' : ''}`;
-                div.innerHTML = `<strong>${a.nombre}</strong><br><span style="font-size:0.8rem">Daño: ${a.daño} | CD: ${a.cd}</span>`;
+                div.className = `item-tienda ${selArma === idx ? 'activo' : ''}`;
+                div.innerHTML = `<strong>${a.nombre}</strong><br><span style="font-size:0.75rem; color:#8892b0">DMG: ${a.daño} | CD: ${a.cd}</span>`;
                 div.onclick = () => { selArma = idx; renderMenu(); };
                 gridA.appendChild(div);
             });
         }
 
-        document.getElementById('btn-jugar').onclick = () => iniciarPartida();
-        document.getElementById('btn-volver').onclick = () => {
-            document.getElementById('pantalla-fin').classList.add('oculto');
-            document.getElementById('pantalla-inicio').classList.remove('oculto');
-            estadoJuego = 'MENU';
-            renderMenu();
-        };
-
-        function iniciarPartida() {
+        document.getElementById('btn-jugar').onclick = () => {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
             document.getElementById('pantalla-inicio').classList.add('oculto');
             document.getElementById('ui').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
             
-            gameState.proyectiles.forEach(p => scene.remove(p.mesh));
-            gameState.proyectiles = [];
-            gameState.particulas.forEach(p => scene.remove(p.mesh));
-            gameState.particulas = [];
+            gameState.proyectiles.forEach(p => scene.remove(p.mesh)); gameState.proyectiles = [];
+            gameState.particulas.forEach(p => scene.remove(p.mesh)); gameState.particulas = [];
 
             inicializarMapa();
             spawnJugador();
@@ -338,7 +403,14 @@
             
             actualizarUI();
             estadoJuego = 'JUGANDO';
-        }
+        };
+
+        document.getElementById('btn-volver').onclick = () => {
+            document.getElementById('pantalla-fin').classList.add('oculto');
+            document.getElementById('pantalla-inicio').classList.remove('oculto');
+            estadoJuego = 'MENU';
+            renderMenu();
+        };
 
         function finJuego() {
             estadoJuego = 'FIN';
@@ -347,7 +419,7 @@
             document.getElementById('pantalla-fin').classList.remove('oculto');
             
             const posicion = gameState.bots.length + 1;
-            const ganancia = (gameState.stats.kills * 10) + (posicion === 1 ? 50 : 0);
+            const ganancia = (gameState.stats.kills * 15) + (posicion === 1 ? 100 : 0);
             
             document.getElementById('posicion-final').innerText = posicion;
             document.getElementById('monedas-ganadas').innerText = ganancia;
@@ -357,61 +429,56 @@
             document.getElementById('monedas-text').innerText = monedasGlobales;
         }
 
-        // ==========================================
-        // BUCLE DE ACTUALIZACIÓN (UPDATE)
-        // ==========================================
         function actualizarUI() {
             document.getElementById('hp-text').innerText = Math.ceil(gameState.jugador.hp);
             document.getElementById('hp-bar').style.width = Math.max(0, (gameState.jugador.hp / gameState.jugador.maxHp) * 100) + '%';
             document.getElementById('alive-text').innerText = gameState.bots.length + (gameState.jugador.vivo ? 1 : 0);
-            document.getElementById('monedas-text').innerText = monedasGlobales + (gameState.stats.kills * 10);
+            document.getElementById('monedas-text').innerText = monedasGlobales + (gameState.stats.kills * 15);
+            document.getElementById('ammo-text').innerText = gameState.jugador.municionActual === Infinity ? '∞' : gameState.jugador.municionActual;
             
-            if(gameState.bots.length === 0 && gameState.jugador.vivo) finJuego(); // Victoria
+            if(gameState.bots.length === 0 && gameState.jugador.vivo) finJuego();
         }
 
-        function crearImpacto(pos) {
-            const geo = new THREE.BufferGeometry();
-            const posArray = new Float32Array(15 * 3);
-            for(let i=0; i<45; i++) posArray[i] = (Math.random() - 0.5) * 1.5;
-            geo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const sis = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.2, color: 0xffaa00 }));
-            sis.position.copy(pos);
-            scene.add(sis);
-            gameState.particulas.push({ mesh: sis, vida: 15 });
-        }
-
+        // ==========================================
+        // ENTRADA DE USUARIO Y EVENTOS
+        // ==========================================
         const teclas = {};
         window.addEventListener('keydown', (e) => teclas[e.key.toLowerCase()] = true);
         window.addEventListener('keyup', (e) => teclas[e.key.toLowerCase()] = false);
         window.addEventListener('mousedown', (e) => { if(e.button === 0) disparando = true; });
         window.addEventListener('mouseup', (e) => { if(e.button === 0) disparando = false; });
+        window.addEventListener('contextmenu', e => e.preventDefault());
 
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+        });
+
+        // ==========================================
+        // BUCLE PRINCIPAL (RENDER Y LÓGICA)
+        // ==========================================
         function animar() {
             requestAnimationFrame(animar);
+            const time = Date.now() * 0.005;
 
             if(estadoJuego === 'JUGANDO') {
-                // Actualizar Zona
                 zoneData.radio -= zoneData.shrinkSpeed;
                 if(zoneData.radio < 5) zoneData.radio = 5;
                 meshZona.scale.set(zoneData.radio, 1, zoneData.radio);
 
-                // Jugador
                 if(gameState.jugador.vivo) {
                     if(gameState.jugador.cooldown > 0) gameState.jugador.cooldown--;
 
-                    // Interpolación de animación de arma (Recuperación de recoil)
                     const armaInter = gameState.jugador.armaMesh.children[0];
                     armaInter.position.z = THREE.MathUtils.lerp(armaInter.position.z, -0.5, 0.1);
 
-                    // Disparo Automático/Manual
-                    const armaActualStats = DATOS.armas[selArma];
+                    const armaStats = DATOS.armas[selArma];
                     if(disparando && gameState.jugador.cooldown <= 0) {
-                        ejecutarDisparo(gameState.jugador.mesh, gameState.jugador.armaMesh, true, -1, armaActualStats);
-                        gameState.jugador.cooldown = armaActualStats.cd;
-                        if(!armaActualStats.auto) disparando = false; // Requiere click repetido
+                        ejecutarDisparo(gameState.jugador.mesh, gameState.jugador.armaMesh, true, -1, armaStats);
+                        gameState.jugador.cooldown = armaStats.cd;
+                        if(!armaStats.auto) disparando = false; 
                     }
 
-                    // Movimiento
                     const dir = new THREE.Vector3(0, 0, 0);
                     if(teclas['w']) dir.z -= 1; if(teclas['s']) dir.z += 1;
                     if(teclas['a']) dir.x -= 1; if(teclas['d']) dir.x += 1;
@@ -430,139 +497,41 @@
                         gameState.jugador.mesh.position.set(nx, gameState.jugador.mesh.position.y, nz);
                     }
 
-                    // Daño Zona
+                    // Animaciones Procedurales
+                    if(gameState.jugador.mesh.userData.tipo === 'dron') {
+                        gameState.jugador.mesh.position.y = Math.sin(time + gameState.jugador.mesh.userData.animOffset) * 0.2 + 1;
+                        gameState.jugador.mesh.userData.aspas[0].rotation.y += 0.5;
+                        gameState.jugador.mesh.userData.aspas[1].rotation.y -= 0.5;
+                    } else {
+                        gameState.jugador.mesh.position.y = dir.lengthSq() > 0 ? Math.abs(Math.sin(time * 2)) * 0.2 : 0;
+                    }
+
+                    // Interacciones de Entorno (Cajas y Zona)
+                    for(let d=drops.length-1; d>=0; d--) {
+                        if(gameState.jugador.mesh.position.distanceTo(drops[d].position) < 2) {
+                            gameState.jugador.municionActual = armaStats.maxAmmo;
+                            playSonido('recarga'); scene.remove(drops[d]); drops.splice(d, 1); actualizarUI();
+                        }
+                    }
+
                     if(Math.hypot(gameState.jugador.mesh.position.x, gameState.jugador.mesh.position.z) > zoneData.radio) {
                         gameState.jugador.hp -= zoneData.dps / 60;
                         document.getElementById('zone-warning').style.display = 'block';
                         actualizarUI();
                         if(gameState.jugador.hp <= 0) { gameState.jugador.vivo = false; finJuego(); }
-                    } else {
-                        document.getElementById('zone-warning').style.display = 'none';
-                    }
+                    } else { document.getElementById('zone-warning').style.display = 'none'; }
 
-                    // Cámara
                     camera.position.x = gameState.jugador.mesh.position.x;
                     camera.position.y = gameState.jugador.mesh.position.y + 20;
                     camera.position.z = gameState.jugador.mesh.position.z + 20;
                     camera.lookAt(gameState.jugador.mesh.position);
                 }
 
-                // Bots
+                // Lógica Bots
                 for(let i = gameState.bots.length - 1; i >= 0; i--) {
                     let bot = gameState.bots[i];
                     if(bot.cooldown > 0) bot.cooldown--;
                     
                     bot.armaMesh.children[0].position.z = THREE.MathUtils.lerp(bot.armaMesh.children[0].position.z, -0.5, 0.1);
 
-                    let obj = null, distMin = 40;
-                    if(gameState.jugador.vivo) {
-                        let d = bot.mesh.position.distanceTo(gameState.jugador.mesh.position);
-                        if(d < distMin) { distMin = d; obj = gameState.jugador.mesh; }
-                    }
-                    gameState.bots.forEach((ob, idx) => {
-                        if(i !== idx) {
-                            let d = bot.mesh.position.distanceTo(ob.mesh.position);
-                            if(d < distMin) { distMin = d; obj = ob.mesh; }
-                        }
-                    });
-
-                    if(obj) {
-                        if(distMin > 15) {
-                            const d = new THREE.Vector3().subVectors(obj.position, bot.mesh.position).normalize();
-                            bot.mesh.position.addScaledVector(d, bot.speed);
-                            bot.mesh.rotation.y = Math.atan2(d.x, d.z);
-                        } else if (bot.cooldown <= 0) {
-                            bot.mesh.rotation.y = Math.atan2(obj.position.x - bot.mesh.position.x, obj.position.z - bot.mesh.position.z);
-                            ejecutarDisparo(bot.mesh, bot.armaMesh, false, i, DATOS.armas[bot.armaIdx]);
-                            bot.cooldown = DATOS.armas[bot.armaIdx].cd + 30; // Bots tienen penalización de CD
-                        }
-                    }
-
-                    if(Math.hypot(bot.mesh.position.x, bot.mesh.position.z) > zoneData.radio) bot.hp -= zoneData.dps / 60;
-                    if(bot.hp <= 0) {
-                        scene.remove(bot.mesh);
-                        gameState.bots.splice(i, 1);
-                        actualizarUI();
-                    }
-                }
-
-                // Proyectiles
-                for(let i = gameState.proyectiles.length - 1; i >= 0; i--) {
-                    let p = gameState.proyectiles[i];
-                    p.mesh.position.addScaledVector(p.dir, p.speed);
-                    p.vida--;
-                    let dest = false;
-
-                    if(!p.esJugador && gameState.jugador.vivo && p.mesh.position.distanceTo(gameState.jugador.mesh.position) < 1.5) {
-                        gameState.jugador.hp -= p.daño;
-                        crearImpacto(p.mesh.position);
-                        actualizarUI();
-                        dest = true;
-                        if(gameState.jugador.hp <= 0) { gameState.jugador.vivo = false; finJuego(); }
-                    }
-
-                    for(let b = gameState.bots.length - 1; b >= 0; b--) {
-                        if(p.origenId !== b && p.mesh.position.distanceTo(gameState.bots[b].mesh.position) < 1.5) {
-                            gameState.bots[b].hp -= p.daño;
-                            crearImpacto(p.mesh.position);
-                            dest = true;
-                            if(gameState.bots[b].hp <= 0) {
-                                scene.remove(gameState.bots[b].mesh);
-                                gameState.bots.splice(b, 1);
-                                if(p.esJugador) gameState.stats.kills++;
-                                actualizarUI();
-                            }
-                            break;
-                        }
-                    }
-
-                    if(p.vida <= 0 || dest) { scene.remove(p.mesh); gameState.proyectiles.splice(i, 1); }
-                }
-
-                // Partículas
-                for(let i = gameState.particulas.length - 1; i >= 0; i--) {
-                    let p = gameState.particulas[i];
-                    p.vida--;
-                    p.mesh.position.y += 0.05;
-                    p.mesh.material.opacity = p.vida / 15;
-                    if(p.vida <= 0) { scene.remove(p.mesh); gameState.particulas.splice(i, 1); }
-                }
-            }
-
-            // Cámara de rotación en menú
-            if(estadoJuego === 'MENU') {
-                camera.position.set(Math.sin(Date.now() * 0.0005) * 30, 20, Math.cos(Date.now() * 0.0005) * 30);
-                camera.lookAt(0,0,0);
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // Utils
-        function createGridTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#2ecc71'; ctx.fillRect(0, 0, 512, 512);
-            ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 4;
-            for(let i=0; i<512; i+=64) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
-            }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(20, 20);
-            return tex;
-        }
-
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
-
-        // Iniciar
-        renderMenu();
-        animar();
-    </script>
-</body>
-</html>
+                    if(bot.mesh.userData.tipo === 'd
