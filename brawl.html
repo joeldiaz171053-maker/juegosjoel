@@ -62,14 +62,38 @@
             scene.add(muro);
         }
 
-        // 4. JUGADOR (Geometría, Material, Malla)
-        const geometriaJugador = new THREE.BoxGeometry(1.5, 3, 1.5);
-        const materialJugador = new THREE.MeshStandardMaterial({ color: 0x3498db });
-        const jugador = new THREE.Mesh(geometriaJugador, materialJugador);
-        jugador.position.y = 1.5; // Levantar para que no esté hundido en el piso
-        jugador.castShadow = true;
-        scene.add(jugador);
+       // 4. JUGADOR (Geometría, Material, Malla)
+const geometriaJugador = new THREE.BoxGeometry(1.5, 3, 1.5);
+const materialJugador = new THREE.MeshStandardMaterial({ color: 0x3498db });
+const jugador = new THREE.Mesh(geometriaJugador, materialJugador);
+jugador.position.y = 1.5; 
+jugador.castShadow = true;
+scene.add(jugador);
 
+// Arma del jugador
+const geometriaArma = new THREE.BoxGeometry(0.4, 0.4, 2);
+const materialArma = new THREE.MeshStandardMaterial({ color: 0xe74c3c });
+const arma = new THREE.Mesh(geometriaArma, materialArma);
+arma.position.set(1, 0, -1); // Offset lateral y frontal
+arma.castShadow = true;
+jugador.add(arma); // Emparentado al jugador
+        // Bots (Enemigos)
+const bots = [];
+const materialBot = new THREE.MeshStandardMaterial({ color: 0xe67e22 });
+
+for(let i=0; i<5; i++) {
+    let bot = new THREE.Mesh(geometriaJugador, materialBot);
+    bot.position.set((Math.random() - 0.5) * 60, 1.5, (Math.random() - 0.5) * 60);
+    bot.castShadow = true;
+    
+    // Arma del bot
+    let armaBot = new THREE.Mesh(geometriaArma, materialArma);
+    armaBot.position.set(1, 0, -1);
+    bot.add(armaBot);
+
+    scene.add(bot);
+    bots.push(bot);
+}
         // 5. CONTROLES Y FÍSICAS BÁSICAS
         const teclas = {};
         window.addEventListener('keydown', (e) => teclas[e.key.toLowerCase()] = true);
@@ -84,24 +108,41 @@
             camera.updateProjectionMatrix();
         });
 
-        // 6. BUCLE DE JUEGO (Game Loop)
-        function animar() {
-            requestAnimationFrame(animar);
+       // 6. BUCLE DE JUEGO (Game Loop)
+function animar() {
+    requestAnimationFrame(animar);
 
-            // Movimiento 3D (Ejes X y Z son el plano del suelo)
-            if (teclas['w']) jugador.position.z -= velocidad;
-            if (teclas['s']) jugador.position.z += velocidad;
-            if (teclas['a']) jugador.position.x -= velocidad;
-            if (teclas['d']) jugador.position.x += velocidad;
+    // Movimiento 3D
+    if (teclas['w']) jugador.position.z -= velocidad;
+    if (teclas['s']) jugador.position.z += velocidad;
+    if (teclas['a']) jugador.position.x -= velocidad;
+    if (teclas['d']) jugador.position.x += velocidad;
 
-            // Hacer que la cámara siga al jugador desde arriba en ángulo (Cámara isométrica/3ra persona)
-            camera.position.x = jugador.position.x;
-            camera.position.y = jugador.position.y + 15;
-            camera.position.z = jugador.position.z + 15;
-            camera.lookAt(jugador.position); // Apuntar siempre al jugador
+    // Actualización de arma y rotación base del jugador
+    if(teclas['w'] || teclas['s'] || teclas['a'] || teclas['d']) {
+        // Logica futura para apuntar según movimiento
+    }
 
-            renderer.render(scene, camera);
-        }
+    // Comportamiento de Bots (Persecución)
+    const velocidadBot = 0.04;
+    bots.forEach(bot => {
+        bot.lookAt(jugador.position);
+        let direccion = new THREE.Vector3();
+        direccion.subVectors(jugador.position, bot.position).normalize();
+        
+        // Evitar colapso en el eje Y
+        bot.position.x += direccion.x * velocidadBot;
+        bot.position.z += direccion.z * velocidadBot;
+    });
+
+    // Seguimiento de cámara
+    camera.position.x = jugador.position.x;
+    camera.position.y = jugador.position.y + 15;
+    camera.position.z = jugador.position.z + 15;
+    camera.lookAt(jugador.position);
+
+    renderer.render(scene, camera);
+}
 
         animar(); // Iniciar el motor
     </script>
