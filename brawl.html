@@ -1,486 +1,73 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TecnoTrade BRAWL - 5v5 Tactical</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #87ceeb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; touch-action: none; }
-        .glass-panel { background: rgba(18, 18, 24, 0.85); backdrop-filter: saturate(200%) blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #f5f5f7; }
-        
-        /* HUD Top: Marcador T vs CT */
-        #hud-top { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center; z-index: 10; padding: 10px 20px; font-weight: bold; pointer-events: none; }
-        .score-box { font-size: 1.5rem; padding: 5px 15px; border-radius: 5px; }
-        #score-t { background: rgba(255, 159, 10, 0.3); color: #ff9f0a; border: 1px solid #ff9f0a; }
-        #score-ct { background: rgba(41, 151, 255, 0.3); color: #2997ff; border: 1px solid #2997ff; }
-        #timer-box { font-size: 1.8rem; font-family: monospace; color: #fff; text-shadow: 0 0 5px #000; width: 80px; text-align: center; }
-
-        /* HUD Stats (Vida, Dinero, Munición) */
-        #hud-bottom { position: absolute; bottom: 15px; left: 15px; z-index: 10; display: flex; gap: 15px; pointer-events: none; }
-        .hud-stat { padding: 10px 15px; font-size: 1.2rem; min-width: 100px; }
-        .hud-stat span { display: block; font-size: 0.7rem; color: #a1a1a6; text-transform: uppercase; }
-        .val-hp { color: #34c759; font-weight: bold; }
-        .val-tk { color: #32d74b; font-weight: bold; }
-        .val-ammo { color: #fff; font-weight: bold; }
-
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #00ff00; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; }
-        
-        /* Menús a pantalla completa */
-        .pantalla { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 30; background: rgba(0,0,0,0.8); transition: opacity 0.2s; }
-        .oculto { opacity: 0; pointer-events: none; display: none !important; }
-        
-        .menu-contenedor { padding: 25px; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; }
-        h1, h2 { text-align: center; margin-top: 0; color: #fff; }
-        .btn { background: #fff; color: #000; border: none; padding: 12px 24px; border-radius: 5px; font-weight: 700; cursor: pointer; margin: 5px; text-transform: uppercase; }
-        .btn:hover { background: #ccc; }
-        
-        /* Tienda In-Game */
-        .grid-tienda { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 15px 0; }
-        .item-tienda { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .item-tienda:hover { border-color: #34c759; background: rgba(52, 199, 89, 0.1); }
-        .item-tienda.disabled { opacity: 0.5; border-color: #ff3b30; cursor: not-allowed; }
-        
-        /* Controles Móviles Mejorados */
-        #mobile-controls { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 15; pointer-events: none; display: none; }
-        .ctrl-element { position: absolute; pointer-events: auto; }
-        .ctrl-element.edit-mode { border: 2px dashed #ff9f0a; background: rgba(255, 159, 10, 0.2) !important; z-index: 50; }
-        .joy-zone { width: 130px; height: 130px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; }
-        .joy-stick { position: absolute; top: 50%; left: 50%; width: 45px; height: 45px; background: rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        .btn-action { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #fff; font-weight: bold; }
-        
-        /* Iconos UI */
-        #btn-settings-toggle { position: absolute; top: 15px; right: 15px; z-index: 20; background: none; border: none; font-size: 1.5rem; cursor: pointer; pointer-events: auto; }
-        
-        #spectator-ui { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 12; display: none; text-shadow: 0 2px 4px #000; }
-        
-        /* Rango deslizante */
-        input[type="range"] { width: 100%; margin: 15px 0; }
-    </style>
-    <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
-</head>
-<body>
-    <button id="btn-settings-toggle">⚙️</button>
-
-    <!-- Marcador Superior -->
-    <div id="hud-top" class="glass-panel" style="display:none;">
-        <div id="score-t" class="score-box">0</div>
-        <div id="timer-box">2:00</div>
-        <div id="score-ct" class="score-box">0</div>
-    </div>
-
-    <!-- Stats Inferiores -->
-    <div id="hud-bottom" style="display:none;">
-        <div class="glass-panel hud-stat"><span>Salud</span><div id="hp-val" class="val-hp">100</div></div>
-        <div class="glass-panel hud-stat"><span>Tokens $</span><div id="tk-val" class="val-tk">500</div></div>
-        <div class="glass-panel hud-stat"><span>Arma</span><div id="ammo-val" class="val-ammo">12 / 24</div></div>
-    </div>
-
-    <div id="crosshair"></div>
-    <div id="spectator-ui"><h2>MODO ESPECTADOR</h2><p>Viendo a: <span id="spec-name" style="color:#2997ff">Nadie</span></p></div>
-
-    <!-- Controles Móviles (Posiciones dinámicas) -->
-    <div id="mobile-controls">
-        <div id="joy-move" class="ctrl-element joy-zone" style="bottom: 30px; left: 30px;"><div class="joy-stick" id="stick-move"></div></div>
-        <div id="joy-aim" class="ctrl-element joy-zone" style="bottom: 30px; right: 30px;"><div class="joy-stick" id="stick-aim"></div></div>
-        <div id="btn-shoot" class="ctrl-element btn-action" style="bottom: 180px; right: 50px; width: 70px; height: 70px; font-size: 1.5rem;">🎯</div>
-        <div id="btn-buy" class="ctrl-element btn-action" style="bottom: 150px; left: 30px; width: 50px; height: 50px; font-size: 1.2rem;">🛒</div>
-        <div id="btn-bomb" class="ctrl-element btn-action" style="bottom: 80px; right: 180px; width: 60px; height: 60px; font-size: 1rem; display:none;">BOMBA</div>
-    </div>
-
-    <!-- Interfaz Principal (Conexión) -->
-    <div id="screen-lobby" class="pantalla glass-panel">
-        <div class="menu-contenedor glass-panel">
-            <h1>TACTICAL BRAWL 5v5</h1>
-            <p style="text-align:center; color:#888;">Simulación de cliente para juego online.</p>
-            <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
-                <button class="btn" id="btn-join-t" style="background:#ff9f0a; color:#000;">Unirse TERRORISTAS</button>
-                <button class="btn" id="btn-join-ct" style="background:#2997ff; color:#fff;">Unirse C. TERRORISTAS</button>
+<div id="screen-inventory" class="pantalla glass-panel oculto">
+    <div class="menu-contenedor">
+        <h2>Inventario y Personalización</h2>
+        <div style="display:flex; gap:20px;">
+            <div style="flex:1;">
+                <h3>Personajes</h3>
+                <div id="list-chars" class="grid-tienda"></div>
+            </div>
+            <div style="flex:1;">
+                <h3>Skins de Arma</h3>
+                <div id="list-skins" class="grid-tienda"></div>
             </div>
         </div>
+        <button class="btn" onclick="document.getElementById('screen-inventory').classList.add('oculto')">Volver</button>
     </div>
+</div>
 
-    <!-- Menú de Ajustes -->
-    <div id="screen-settings" class="pantalla glass-panel oculto">
-        <div class="menu-contenedor glass-panel">
-            <h2>Ajustes</h2>
-            <label>Volumen General: <span id="vol-val">50%</span></label>
-            <input type="range" id="slider-vol" min="0" max="100" value="50">
-            <hr style="border-color:rgba(255,255,255,0.1)">
-            <h3>Controles Táctiles (Móvil)</h3>
-            <button class="btn" id="btn-edit-hud" style="width:100%; background:#ff9f0a;">Mover Posición de Controles</button>
-            <button class="btn" id="btn-reset-hud" style="width:100%; font-size:0.8rem;">Restaurar Por Defecto</button>
-            <button class="btn" id="btn-close-settings" style="width:100%; margin-top:20px;">Cerrar</button>
-        </div>
-    </div>
-
-    <!-- Tienda (Buy Menu) -->
-    <div id="screen-buy" class="pantalla glass-panel oculto">
-        <div class="menu-contenedor glass-panel">
-            <h2>Tienda (Fase de Compra)</h2>
-            <p style="text-align:center; color:#32d74b; font-size:1.5rem; margin:0;">Tokens: $<span id="buy-tokens">500</span></p>
-            <div id="shop-grid" class="grid-tienda"></div>
-            <button class="btn" id="btn-close-buy" style="width:100%; margin-top:10px;">Cerrar Tienda</button>
-        </div>
-    </div>
-
-    <script type="module">
-        import * as THREE from 'three';
-
-        // --- SISTEMA DE DATOS Y ECONOMÍA CSGO-STYLE ---
-        const ARMAS = [
-            { id: 0, n: 'Cuchillo Táctico', tipo: 'melee', dmg: 55, vel: 0, max: Infinity, price: 0 },
-            { id: 1, n: 'Glock / USP', tipo: 'pistol', dmg: 25, vel: 8, max: 12, price: 200, auto: false },
-            { id: 2, n: 'Desert Eagle', tipo: 'pistol', dmg: 50, vel: 10, max: 7, price: 700, auto: false },
-            { id: 3, n: 'MP5 SMG', tipo: 'smg', dmg: 18, vel: 7, max: 30, price: 1500, auto: true, cd: 6 },
-            { id: 4, n: 'AK-47 / M4', tipo: 'rifle', dmg: 35, vel: 12, max: 30, price: 2700, auto: true, cd: 8 },
-            { id: 5, n: 'AWP Sniper', tipo: 'sniper', dmg: 115, vel: 20, max: 5, price: 4750, auto: false, cd: 50 }
-        ];
-
-        // Lógica Global del "Servidor/Cliente"
-        const G = {
-            state: 'LOBBY', // LOBBY, PLAYING, SPECTATING
-            team: null, // 'T' o 'CT'
-            tokens: 500,
-            hp: 100,
-            weaponIdx: 1,
-            ammo: ARMAS[1].max,
-            isMobile: ('ontouchstart' in window) || (navigator.maxTouchPoints > 0),
-            vol: 0.5,
-            
-            // Lógica de Partida (Sincronizada idealmente por server)
-            roundTime: 120, 
-            scoreT: 0, scoreCT: 0,
-            phase: 'WARMUP', // WARMUP, BUY_TIME, ACTIVE, BOMB_PLANTED, ROUND_OVER
-            players: [], // Array simulando jugadores en red
-            specIndex: 0
-        };
-
-        // --- GESTIÓN DE AUDIO ---
-        let aCtx = null;
-        function playSnd(tipo) {
-            if(!aCtx) { aCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-            if(aCtx.state==='suspended') aCtx.resume();
-            const o = aCtx.createOscillator(), g = aCtx.createGain();
-            o.connect(g); g.connect(aCtx.destination);
-            g.gain.value = G.vol; // Aplica volumen maestro
-            
-            if(tipo==='shoot') { o.type='square'; o.frequency.setValueAtTime(400, aCtx.currentTime); o.frequency.exponentialRampToValueAtTime(10, aCtx.currentTime+0.1); g.gain.setValueAtTime(G.vol*0.2, aCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime+0.1); o.start(); o.stop(aCtx.currentTime+0.1); }
-            if(tipo==='buy') { o.type='sine'; o.frequency.setValueAtTime(800, aCtx.currentTime); o.frequency.setValueAtTime(1200, aCtx.currentTime+0.1); g.gain.setValueAtTime(G.vol*0.1, aCtx.currentTime); o.start(); o.stop(aCtx.currentTime+0.2); }
-            if(tipo==='plant') { o.type='triangle'; o.frequency.setValueAtTime(600, aCtx.currentTime); o.frequency.linearRampToValueAtTime(1000, aCtx.currentTime+1); g.gain.setValueAtTime(G.vol*0.3, aCtx.currentTime); o.start(); o.stop(aCtx.currentTime+1); }
-        }
-
-        // --- CONFIGURACIÓN UI Y CONTROLES PERSONALIZABLES ---
-        document.getElementById('slider-vol').addEventListener('input', (e) => { G.vol = e.target.value/100; document.getElementById('vol-val').innerText = e.target.value+'%'; });
-        document.getElementById('btn-settings-toggle').onclick = () => document.getElementById('screen-settings').classList.toggle('oculto');
-        document.getElementById('btn-close-settings').onclick = () => document.getElementById('screen-settings').classList.add('oculto');
-
-        // Lógica de arrastre de botones HUD
-        let isEditingHUD = false;
-        const ctrlElements = document.querySelectorAll('.ctrl-element');
+<script type="module">
+    // --- LÓGICA DE GESTIÓN DE RONDAS Y BOOTIN ---
+    const Match = {
+        maxRounds: 9,
+        currentRound: 1,
+        isBuyingPhase: true,
         
-        function saveHUD() {
-            const layout = {};
-            ctrlElements.forEach(el => { layout[el.id] = { left: el.style.left, right: el.style.right, top: el.style.top, bottom: el.style.bottom }; });
-            localStorage.setItem('tt_hud_layout', JSON.stringify(layout));
-        }
-
-        function loadHUD() {
-            try {
-                const layout = JSON.parse(localStorage.getItem('tt_hud_layout'));
-                if(layout) {
-                    ctrlElements.forEach(el => {
-                        if(layout[el.id]) {
-                            el.style.left = layout[el.id].left; el.style.right = layout[el.id].right; 
-                            el.style.top = layout[el.id].top; el.style.bottom = layout[el.id].bottom;
-                        }
-                    });
-                }
-            } catch(e){}
-        }
-
-        document.getElementById('btn-edit-hud').onclick = () => {
-            isEditingHUD = !isEditingHUD;
-            if(isEditingHUD) {
-                document.getElementById('btn-edit-hud').innerText = "Guardar Disposición";
-                document.getElementById('screen-settings').classList.add('oculto');
-                ctrlElements.forEach(el => el.classList.add('edit-mode'));
-            } else {
-                document.getElementById('btn-edit-hud').innerText = "Mover Posición de Controles";
-                ctrlElements.forEach(el => el.classList.remove('edit-mode'));
-                saveHUD();
-            }
-        };
-
-        // Arrastrar elementos (Touch para móvil simulado)
-        let dragTarget = null, oX = 0, oY = 0;
-        document.addEventListener('touchstart', (e) => {
-            if(!isEditingHUD) return;
-            const t = e.target.closest('.ctrl-element');
-            if(t) { dragTarget = t; oX = e.touches[0].clientX - t.getBoundingClientRect().left; oY = e.touches[0].clientY - t.getBoundingClientRect().top; }
-        });
-        document.addEventListener('touchmove', (e) => {
-            if(!isEditingHUD || !dragTarget) return;
-            e.preventDefault();
-            dragTarget.style.left = (e.touches[0].clientX - oX) + 'px';
-            dragTarget.style.top = (e.touches[0].clientY - oY) + 'px';
-            dragTarget.style.right = 'auto'; dragTarget.style.bottom = 'auto';
-        });
-        document.addEventListener('touchend', () => { dragTarget = null; });
-
-        // --- RENDERIZADO 3D Y MAPA TÁCTICO ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x87CEEB, 0.004);
-
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
-
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 0.7));
-        const dirLight = new THREE.DirectionalLight(0xffffee, 1.2);
-        dirLight.position.set(100, 200, 50); dirLight.castShadow = true;
-        dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100; dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
-        scene.add(dirLight);
-
-        // Suelo tipo polvo/arena (Dust2 vibes)
-        const floorGeo = new THREE.PlaneGeometry(300, 300);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 1.0 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI/2; floor.receiveShadow = true;
-        scene.add(floor);
-
-        const obstacles = [];
-        const bombSites = { A: new THREE.Vector3(50, 0, 50), B: new THREE.Vector3(-50, 0, -50) };
-
-        function buildMap() {
-            const mB = new THREE.MeshStandardMaterial({color: 0xaa9988}); // Edificios color arena
-            // Generar cajas y paredes simulando un mapa
-            for(let i=0; i<100; i++) {
-                const w = 4+Math.random()*10, h = 4+Math.random()*10, d = 4+Math.random()*10;
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mB);
-                mesh.position.set((Math.random()-0.5)*200, h/2, (Math.random()-0.5)*200);
-                mesh.castShadow = mesh.receiveShadow = true;
-                scene.add(mesh);
-                obstacles.push(new THREE.Box3().setFromObject(mesh));
-            }
-            
-            // Marcar Sitios de Bomba visualmente
-            const mSiteA = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 0.1, 32), new THREE.MeshBasicMaterial({color: 0xff0000, transparent:true, opacity:0.3}));
-            mSiteA.position.copy(bombSites.A); scene.add(mSiteA);
-            const mSiteB = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 0.1, 32), new THREE.MeshBasicMaterial({color: 0x0000ff, transparent:true, opacity:0.3}));
-            mSiteB.position.copy(bombSites.B); scene.add(mSiteB);
-        }
-        buildMap();
-
-        // --- SISTEMA DE JUGADOR Y ARMAS ---
-        const playerObj = new THREE.Group();
-        const playerCamContainer = new THREE.Object3D();
-        playerObj.add(playerCamContainer);
-        playerCamContainer.add(camera);
-        camera.position.set(0, 1.6, 0);
-        
-        let yaw = 0, pitch = 0;
-        let isShooting = false, cdTimer = 0;
-
-        // Entradas teclado/ratón
-        const keys = { w:0, a:0, s:0, d:0, b:0 };
-        if(!G.isMobile) {
-            window.addEventListener('keydown', e => { let k=e.key.toLowerCase(); if(keys[k]!==undefined) keys[k]=1; if(k==='b') openShop(); });
-            window.addEventListener('keyup', e => { let k=e.key.toLowerCase(); if(keys[k]!==undefined) keys[k]=0; });
-            document.body.addEventListener('click', () => { if(G.state==='PLAYING' && !isEditingHUD) document.body.requestPointerLock(); });
-            window.addEventListener('mousemove', e => {
-                if(document.pointerLockElement && G.hp > 0 && G.state === 'PLAYING') {
-                    yaw -= e.movementX * 0.002; pitch -= e.movementY * 0.002;
-                    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
-                }
-            });
-            window.addEventListener('mousedown', e => { if(e.button===0) isShooting=true; });
-            window.addEventListener('mouseup', e => { if(e.button===0) isShooting=false; });
-        } else {
-            document.getElementById('mobile-controls').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'none'; // Reemplazado por apuntado manual si se requiere, pero lo mantendremos oculto para Táctico
-            
-            // Joypads simulados (reutilizando tu lógica pero simplificada para el ejemplo)
-            let movTouch=null, aimTouch=null;
-            const jM = document.getElementById('joy-move'), jA = document.getElementById('joy-aim');
-            // ... (Se debe conectar la lógica de joystick real aquí para X/Y de movimiento)
-            
-            document.getElementById('btn-buy').addEventListener('touchstart', (e)=>{e.preventDefault(); openShop();});
-            document.getElementById('btn-shoot').addEventListener('touchstart', (e)=>{e.preventDefault(); isShooting=true;});
-            document.getElementById('btn-shoot').addEventListener('touchend', (e)=>{e.preventDefault(); isShooting=false;});
-        }
-
-        // --- SISTEMA DE TIENDA (BUY MENU) ---
-        function openShop() {
-            if(G.phase !== 'BUY_TIME' || G.state !== 'PLAYING') return; 
-            document.getElementById('screen-buy').classList.remove('oculto');
-            document.getElementById('buy-tokens').innerText = G.tokens;
-            
-            if(G.isMobile) document.exitPointerLock?.();
-
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = '';
-            ARMAS.forEach((w, i) => {
-                if(i===0) return; // Cuchillo por defecto
-                const div = document.createElement('div');
-                div.className = `item-tienda ${G.tokens < w.price ? 'disabled' : ''}`;
-                div.innerHTML = `<strong>${w.n}</strong><br><span style="color:#a1a1a6; font-size:0.8rem;">Daño: ${w.dmg}</span><br><span style="color:#32d74b;">$${w.price}</span>`;
-                div.onclick = () => {
-                    if(G.tokens >= w.price) {
-                        G.tokens -= w.price;
-                        G.weaponIdx = i;
-                        G.ammo = w.max;
-                        playSnd('buy');
-                        updateHUD();
-                        document.getElementById('screen-buy').classList.add('oculto');
-                        if(!G.isMobile) document.body.requestPointerLock();
-                    }
-                };
-                grid.appendChild(div);
-            });
-        }
-        document.getElementById('btn-close-buy').onclick = () => { document.getElementById('screen-buy').classList.add('oculto'); if(!G.isMobile) document.body.requestPointerLock(); };
-
-        // --- MODO ESPECTADOR ---
-        function triggerDeath() {
-            G.hp = 0;
-            G.state = 'SPECTATING';
-            updateHUD();
-            document.getElementById('spectator-ui').style.display = 'block';
-            
-            // Simular buscar compañeros de equipo vivos
-            const teammates = G.players.filter(p => p.team === G.team && p.alive);
-            if(teammates.length > 0) {
-                G.specIndex = 0;
-                // Adjuntar cámara al primer compañero vivo
-                document.getElementById('spec-name').innerText = teammates[0].name;
-                // En red real, actualizaríamos la posición de la cámara a teammates[0].mesh.position
-            } else {
-                document.getElementById('spec-name').innerText = "Todos eliminados";
-            }
-        }
-
-        // --- LÓGICA DE PARTIDA (MOCK RED) ---
-        function updateHUD() {
-            document.getElementById('score-t').innerText = G.scoreT;
-            document.getElementById('score-ct').innerText = G.scoreCT;
-            
-            let m = Math.floor(G.roundTime/60), s = G.roundTime%60;
-            document.getElementById('timer-box').innerText = `${m}:${s<10?'0':''}${s}`;
-            
-            if(G.state === 'PLAYING') {
-                document.getElementById('hp-val').innerText = G.hp;
-                document.getElementById('tk-val').innerText = G.tokens;
-                document.getElementById('ammo-val').innerText = ARMAS[G.weaponIdx].max === Infinity ? '∞' : `${G.ammo} / -`;
-            }
-        }
-
-        function joinTeam(team) {
-            G.team = team;
-            G.state = 'PLAYING';
+        // Reinicio de partida
+        resetRound() {
+            this.currentRound++;
             G.hp = 100;
-            G.tokens = 500;
-            G.weaponIdx = 1; // Pistola
+            G.ammo = ARMAS[G.weaponIdx].max;
             
-            document.getElementById('screen-lobby').classList.add('oculto');
-            document.getElementById('hud-top').style.display = 'flex';
-            document.getElementById('hud-bottom').style.display = 'flex';
-            document.getElementById('crosshair').style.display = G.isMobile ? 'none' : 'block';
+            // Reubicar jugadores en puntos de spawn
+            playerObj.position.set(G.team === 'T' ? -120 : 120, 0, 0);
             
-            // Spawnear
-            playerObj.position.copy(team === 'T' ? new THREE.Vector3(-100, 0, 0) : new THREE.Vector3(100, 0, 0));
-            scene.add(playerObj);
+            // Generar botín (Vida extra/Munición)
+            spawnLoot();
             
-            startRound();
+            if(this.currentRound > this.maxRounds) endMatch();
         }
-        document.getElementById('btn-join-t').onclick = () => joinTeam('T');
-        document.getElementById('btn-join-ct').onclick = () => joinTeam('CT');
+    };
 
-        function startRound() {
-            G.phase = 'BUY_TIME';
-            G.roundTime = 15; // 15s compra, luego cambamos a ACTIVE
-            updateHUD();
-            
-            // Simulador de reloj de servidor
-            if(window.roundInterval) clearInterval(window.roundInterval);
-            window.roundInterval = setInterval(() => {
-                if(G.roundTime > 0) {
-                    G.roundTime--;
-                    if(G.roundTime === 0 && G.phase === 'BUY_TIME') {
-                        G.phase = 'ACTIVE';
-                        G.roundTime = 115; // 1:55 ronda normal
-                    }
-                    updateHUD();
-                } else if(G.roundTime <= 0 && G.phase === 'ACTIVE') {
-                    // Se acabó el tiempo, gana CT
-                    G.scoreCT++;
-                    G.tokens += 1900; // Bonus pérdida T / Ganancia base
-                    startRound(); // Reiniciar simulación
-                }
-            }, 1000);
+    function spawnLoot() {
+        // Lógica de texturizado y loot
+        const lootTypes = ['MEDKIT', 'AMMO'];
+        lootTypes.forEach(type => {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(2,2,2), 
+                new THREE.MeshStandardMaterial({ 
+                    map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/crate.gif') // Ejemplo de textura
+                })
+            );
+            mesh.position.set((Math.random()-0.5)*150, 1, (Math.random()-0.5)*150);
+            scene.add(mesh);
+        });
+    }
+
+    // --- INTERFAZ DE TIENDA Y SKINS ---
+    const Inventory = {
+        chars: [{id:0, name:'Operador Alpha', skin:'basic'}, {id:1, name:'Ghost Unit', skin:'stealth'}],
+        skins: [{id:0, name:'Classic', color:0xffffff}, {id:1, name:'Neon', color:0x00ff00}],
+        
+        init() {
+            const cList = document.getElementById('list-chars');
+            this.chars.forEach(c => {
+                const b = document.createElement('button');
+                b.className = 'item-tienda';
+                b.innerText = c.name;
+                b.onclick = () => alert('Personaje equipado: ' + c.name);
+                cList.appendChild(b);
+            });
         }
-
-        // --- BUCLE PRINCIPAL ---
-        const clock = new THREE.Clock();
-
-        function loop() {
-            requestAnimationFrame(loop);
-            const dt = clock.getDelta();
-
-            if(G.state === 'PLAYING' && G.hp > 0) {
-                // Rotación cámara
-                playerObj.rotation.y = yaw;
-                playerCamContainer.rotation.x = pitch;
-
-                // Movimiento básico (sin colisiones avanzadas en este snippet para ahorrar espacio)
-                const dir = new THREE.Vector3(0,0,0);
-                if(keys.w) dir.z -= 1; if(keys.s) dir.z += 1;
-                if(keys.a) dir.x -= 1; if(keys.d) dir.x += 1;
-                
-                if(dir.lengthSq() > 0) {
-                    dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-                    playerObj.position.add(dir.multiplyScalar(dt * 8)); // Vel caminata
-                }
-
-                // Disparo
-                if(cdTimer > 0) cdTimer -= dt;
-                const arma = ARMAS[G.weaponIdx];
-                if(isShooting && cdTimer <= 0) {
-                    if(arma.tipo === 'melee') {
-                        playSnd('shoot'); // Placeholder sonido cuchillo
-                        cdTimer = 0.5;
-                    } else if(G.ammo > 0) {
-                        playSnd('shoot');
-                        G.ammo--;
-                        cdTimer = arma.cd ? arma.cd / 60 : 0.2; // Convertir frames a segundos aprox
-                        
-                        // En un juego en red real: Socket.emit('shoot', { dir: camera.getWorldDirection(), origin: camera.getWorldPosition() });
-                        
-                        if(!arma.auto) isShooting = false;
-                        updateHUD();
-                    }
-                }
-
-                // Zona de Bomba (Solo visual/simulación)
-                const inZoneA = playerObj.position.distanceTo(bombSites.A) < 8;
-                const inZoneB = playerObj.position.distanceTo(bombSites.B) < 8;
-                if(G.team === 'T' && (inZoneA || inZoneB) && G.phase === 'ACTIVE') {
-                    document.getElementById('btn-bomb').style.display = 'flex';
-                    // Al apretar plantaría y emitiría a red.
-                } else {
-                    document.getElementById('btn-bomb').style.display = 'none';
-                }
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        loadHUD(); // Cargar posiciones de UI móvil guardadas
-        loop();
-    </script>
-</body>
-</html>
+    };
+    Inventory.init();
+</script>
