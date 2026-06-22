@@ -1,73 +1,90 @@
-<div id="screen-inventory" class="pantalla glass-panel oculto">
-    <div class="menu-contenedor">
-        <h2>Inventario y Personalización</h2>
-        <div style="display:flex; gap:20px;">
-            <div style="flex:1;">
-                <h3>Personajes</h3>
-                <div id="list-chars" class="grid-tienda"></div>
-            </div>
-            <div style="flex:1;">
-                <h3>Skins de Arma</h3>
-                <div id="list-skins" class="grid-tienda"></div>
-            </div>
-        </div>
-        <button class="btn" onclick="document.getElementById('screen-inventory').classList.add('oculto')">Volver</button>
-    </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tactical Shooter Engine</title>
+    <style>
+        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        #hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; pointer-events: none; }
+        .ui-panel { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-left: 4px solid #34c759; }
+        #shop-menu { display: none; position: absolute; top: 20%; left: 30%; background: #111; padding: 20px; border: 1px solid #444; }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div id="timer">Ronda: 01 | Tiempo: 1:55</div>
+    <div id="score">Terroristas 0 - 0 Antiterroristas</div>
+</div>
+
+<div class="ui-panel">
+    <div>Vida: <span id="hp">100</span></div>
+    <div>Tokens: $<span id="tokens">500</span></div>
+    <div id="weapon">Arma: Cuchillo</div>
+    <button onclick="toggleShop()" style="pointer-events:all; margin-top:10px;">Abrir Tienda (B)</button>
+</div>
+
+<div id="shop-menu">
+    <h2>Tienda de Armas</h2>
+    <div id="items-list"></div>
+    <button onclick="toggleShop()">Cerrar</button>
 </div>
 
 <script type="module">
-    // --- LÓGICA DE GESTIÓN DE RONDAS Y BOOTIN ---
-    const Match = {
-        maxRounds: 9,
+    // Lógica del Juego
+    const GameState = {
+        tokens: 500,
+        hp: 100,
         currentRound: 1,
         isBuyingPhase: true,
+        weapon: "Cuchillo",
         
-        // Reinicio de partida
-        resetRound() {
-            this.currentRound++;
-            G.hp = 100;
-            G.ammo = ARMAS[G.weaponIdx].max;
-            
-            // Reubicar jugadores en puntos de spawn
-            playerObj.position.set(G.team === 'T' ? -120 : 120, 0, 0);
-            
-            // Generar botín (Vida extra/Munición)
-            spawnLoot();
-            
-            if(this.currentRound > this.maxRounds) endMatch();
-        }
+        weaponsList: [
+            { name: "Pistola USP", price: 200 },
+            { name: "Rifle M4", price: 2700 },
+            { name: "Francotirador", price: 4750 }
+        ]
     };
 
-    function spawnLoot() {
-        // Lógica de texturizado y loot
-        const lootTypes = ['MEDKIT', 'AMMO'];
-        lootTypes.forEach(type => {
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(2,2,2), 
-                new THREE.MeshStandardMaterial({ 
-                    map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/crate.gif') // Ejemplo de textura
-                })
-            );
-            mesh.position.set((Math.random()-0.5)*150, 1, (Math.random()-0.5)*150);
-            scene.add(mesh);
+    // Inicialización de Tienda
+    function buildShop() {
+        const list = document.getElementById('items-list');
+        GameState.weaponsList.forEach(w => {
+            const btn = document.createElement('button');
+            btn.innerHTML = `${w.name} - $${w.price}`;
+            btn.style.display = "block";
+            btn.onclick = () => buyWeapon(w);
+            list.appendChild(btn);
         });
     }
 
-    // --- INTERFAZ DE TIENDA Y SKINS ---
-    const Inventory = {
-        chars: [{id:0, name:'Operador Alpha', skin:'basic'}, {id:1, name:'Ghost Unit', skin:'stealth'}],
-        skins: [{id:0, name:'Classic', color:0xffffff}, {id:1, name:'Neon', color:0x00ff00}],
-        
-        init() {
-            const cList = document.getElementById('list-chars');
-            this.chars.forEach(c => {
-                const b = document.createElement('button');
-                b.className = 'item-tienda';
-                b.innerText = c.name;
-                b.onclick = () => alert('Personaje equipado: ' + c.name);
-                cList.appendChild(b);
-            });
+    function buyWeapon(w) {
+        if(GameState.tokens >= w.price) {
+            GameState.tokens -= w.price;
+            GameState.weapon = w.name;
+            updateUI();
+        } else {
+            alert("No tienes suficientes tokens");
         }
+    }
+
+    function updateUI() {
+        document.getElementById('hp').innerText = GameState.hp;
+        document.getElementById('tokens').innerText = GameState.tokens;
+        document.getElementById('weapon').innerText = "Arma: " + GameState.weapon;
+    }
+
+    window.toggleShop = () => {
+        const shop = document.getElementById('shop-menu');
+        shop.style.display = (shop.style.display === 'block') ? 'none' : 'block';
     };
-    Inventory.init();
+
+    // Eventos de teclado
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'b') toggleShop();
+    });
+
+    buildShop();
 </script>
+</body>
+</html>
